@@ -1,6 +1,16 @@
 const { app, BrowserWindow, globalShortcut, ipcMain, Menu, safeStorage, shell, Tray } = require("electron");
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const { parseSentryEnvFile, validateSentrySetup } = require("./lib/orbit-shared.js");
+const { fetchWeather } = require("./lib/weather-service.cjs");
+const { todoRequest: sendTodoRequest } = require("./lib/todo-service.cjs");
+const { loadSentryIssues } = require("./lib/sentry-service.cjs");
+
+if (process.env.ORBIT_TEST_USER_DATA) {
+  app.setPath("userData", path.resolve(process.env.ORBIT_TEST_USER_DATA));
+}
+
+const E2E_MODE = process.env.ORBIT_E2E === "1";
 
 const sentryConfigPath = () => path.join(app.getPath("userData"), "sentry-config.json");
 const sentryEnvPaths = () => {
@@ -19,11 +29,10 @@ const artCraftLauncherPath = process.env.APPDATA
   ? path.join(process.env.APPDATA, "Microsoft", "Windows", "Start Menu", "Programs", "ArtCraft Launcher.lnk")
   : "C:\\Users\\maxsc\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\ArtCraft Launcher.lnk";
 
-const TODO_SUPABASE_URL = "https://yklavrwnlzizftzytehf.supabase.co";
+const TODO_SUPABASE_URL = process.env.ORBIT_TODO_BASE_URL || "https://yklavrwnlzizftzytehf.supabase.co";
 const TODO_SUPABASE_KEY = "sb_publishable_8SDYoTbHj-cbCIgkp28KaQ_JVaqb4EN";
 const TODO_TABLE = "todos";
 const GLOBAL_HOTKEY = "Alt+A";
-const WEATHER_LOCATION = { latitude: 50.43333, longitude: 7.95 };
 
 let mainWindow = null;
 let tray = null;
@@ -43,72 +52,19 @@ const shortcuts = {
   artcraftLauncher: { kind: "app", target: artCraftLauncherPath }
 };
 
-async function todoRequest(search, options = {}) {
-  let response;
-  try {
-    response = await fetch(`${TODO_SUPABASE_URL}/rest/v1/${TODO_TABLE}${search}`, {
-      ...options,
-      headers: {
-        apikey: TODO_SUPABASE_KEY,
-        Authorization: `Bearer ${TODO_SUPABASE_KEY}`,
-        "Content-Type": "application/json",
-        ...options.headers
-      },
-      signal: AbortSignal.timeout(15000)
-    });
-  } catch {
-    throw new Error("Could not reach the To-Do service. Check your internet connection.");
-  }
-
-  if (!response.ok) {
-    let message = `The To-Do service returned HTTP ${response.status}.`;
-    try {
-      const payload = await response.json();
-      if (payload?.message) message = payload.message;
-    } catch {}
-    throw new Error(message);
-  }
-
-  if (response.status === 204) return null;
-  const text = await response.text();
-  return text ? JSON.parse(text) : null;
-}
-
-async function fetchWeather() {
-  const url = new URL("https://api.open-meteo.com/v1/forecast");
-  url.searchParams.set("latitude", String(WEATHER_LOCATION.latitude));
-  url.searchParams.set("longitude", String(WEATHER_LOCATION.longitude));
-  url.searchParams.set("current", "temperature_2m,weather_code");
-  url.searchParams.set("timezone", "Europe/Berlin");
-
-  let response;
-  try {
-    response = await fetch(url, { signal: AbortSignal.timeout(15000) });
-  } catch {
-    throw new Error("The weather service is unreachable. Check your internet connection.");
-  }
-
-  if (!response.ok) {
-    throw new Error(`The weather service returned HTTP ${response.status}.`);
-  }
-
-  let payload;
-  try {
-    payload = await response.json();
-  } catch {
-    throw new Error("The weather service returned an invalid response.");
-  }
-
-  const temperature = payload?.current?.temperature_2m;
-  const weatherCode = payload?.current?.weather_code;
-  if (typeof temperature !== "number" || !Number.isFinite(temperature) || !Number.isInteger(weatherCode)) {
-    throw new Error("The weather service returned an unexpected response.");
-  }
-
-  return { temperature: Math.round(temperature), weatherCode };
+function todoRequest(search, options = {}) {
+  return sendTodoRequest({
+    baseUrl: TODO_SUPABASE_URL,
+    apiKey: TODO_SUPABASE_KEY,
+    table: TODO_TABLE,
+    search,
+    options
+  });
 }
 
 async function readSentryEnvConfig() {
+  if (process.env.ORBIT_NO_ENV === "1") return null;
+
   let foundPartialConfig = false;
   for (const envPath of sentryEnvPaths()) {
     let file;
@@ -119,21 +75,7 @@ async function readSentryEnvConfig() {
       throw new Error("The .env file could not be read.");
     }
 
-    const values = {};
-    for (const line of file.split(/\r?\n/)) {
-      const match = line.match(/^\s*(?:export\s+)?(SENTRY_ORG|SENTRY_PROJECT|SENTRY_AUTH_TOKEN)\s*=\s*(.*?)\s*$/);
-      if (!match) continue;
-      let value = match[2];
-      if (
-        value.length >= 2 &&
-        ((value.startsWith('"') && value.endsWith('"')) ||
-          (value.startsWith("'") && value.endsWith("'")))
-      ) {
-        value = value.slice(1, -1);
-      }
-      values[match[1]] = value;
-    }
-
+    const values = parseSentryEnvFile(file);
     const provided = Object.values(values).filter(Boolean).length;
     if (provided === 0) continue;
     if (provided !== 3) {
@@ -356,7 +298,9 @@ ipcMain.handle("todo:delete", async (_event, id) => {
   return { ok: true };
 });
 
-ipcMain.handle("weather:current", fetchWeather);
+ipcMain.handle("weather:current", () =>
+  fetchWeather(process.env.ORBIT_WEATHER_BASE_URL ? { baseUrl: process.env.ORBIT_WEATHER_BASE_URL } : {})
+);
 
 ipcMain.handle("sentry:status", async () => {
   const envConfig = await readSentryEnvConfig();
@@ -397,24 +341,14 @@ ipcMain.handle("sentry:configure", async (_event, input) => {
     throw new Error("Please enter an organization, project, and API token.");
   }
 
-  const { organization, project, token } = input;
-  const slugPattern = /^[a-zA-Z0-9_-]{1,100}$/;
-  if (typeof organization !== "string" || !slugPattern.test(organization.trim())) {
-    throw new Error("The Sentry organization slug is invalid.");
-  }
-  if (typeof project !== "string" || !slugPattern.test(project.trim())) {
-    throw new Error("The Sentry project slug is invalid.");
-  }
+  const validated = validateSentrySetup(input, { requireToken: false });
   if (!safeStorage.isEncryptionAvailable()) {
     throw new Error("Secure local storage is not available on this device.");
   }
 
   let encryptedToken;
-  if (typeof token === "string" && token.length > 0) {
-    if (token.length < 8 || token.length > 256 || /\s/.test(token)) {
-      throw new Error("The Sentry API token is invalid.");
-    }
-    encryptedToken = safeStorage.encryptString(token).toString("base64");
+  if (validated.token.length > 0) {
+    encryptedToken = safeStorage.encryptString(validated.token).toString("base64");
   } else {
     try {
       const savedConfig = JSON.parse(await fs.readFile(sentryConfigPath(), "utf8"));
@@ -426,8 +360,8 @@ ipcMain.handle("sentry:configure", async (_event, input) => {
   }
 
   const config = {
-    organization: organization.trim(),
-    project: project.trim(),
+    organization: validated.organization,
+    project: validated.project,
     token: encryptedToken
   };
   const configPath = sentryConfigPath();
@@ -477,100 +411,8 @@ ipcMain.handle("sentry:issues", async () => {
     }
   }
 
-  const organizationPath = `/api/0/organizations/${encodeURIComponent(config.organization)}/`;
-  const issuesUrl = new URL(`${organizationPath}issues/`, "https://sentry.io");
-  issuesUrl.searchParams.set("query", "is:unresolved");
-  issuesUrl.searchParams.set("statsPeriod", "14d");
-  issuesUrl.searchParams.set("limit", "100");
-
-  const projectsUrl = new URL(`${organizationPath}projects/`, "https://sentry.io");
-  projectsUrl.searchParams.set("limit", "100");
-
-  const [issues, projects] = await Promise.all([
-    fetchSentryPages(issuesUrl, token, "issues"),
-    fetchSentryPages(projectsUrl, token, "projects")
-  ]);
-
-  return {
-    projectCount: projects.length,
-    issues: issues.map((issue) => ({
-      id: String(issue.id ?? ""),
-      title: String(issue.title ?? "Untitled error"),
-      culprit: String(issue.culprit ?? ""),
-      project: String(issue.project?.name ?? issue.project?.slug ?? "Unknown project"),
-      level: String(issue.level ?? "error"),
-      status: String(issue.status ?? "unknown"),
-      count: String(issue.count ?? "0"),
-      lastSeen: String(issue.lastSeen ?? "")
-    }))
-  };
+  return loadSentryIssues({ organization: config.organization, token });
 });
-
-async function fetchSentryPages(initialUrl, token, resourceName) {
-  const results = [];
-  const seenPages = new Set();
-  let pageUrl = initialUrl;
-
-  while (pageUrl) {
-    if (pageUrl.origin !== "https://sentry.io" || !pageUrl.pathname.startsWith(initialUrl.pathname)) {
-      throw new Error("Sentry returned an invalid page link.");
-    }
-    if (seenPages.has(pageUrl.href)) {
-      throw new Error("Sentry returned a repeated results page.");
-    }
-    seenPages.add(pageUrl.href);
-
-    let response;
-    try {
-      response = await fetch(pageUrl, {
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-        signal: AbortSignal.timeout(15000)
-      });
-    } catch {
-      throw new Error(`Sentry is unreachable while loading ${resourceName}. Check your internet connection.`);
-    }
-
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        throw new Error("Sentry rejected the token. Organization read permissions are required for all projects.");
-      }
-      if (response.status === 404) {
-        throw new Error("Sentry organization not found. Check the organization slug.");
-      }
-      if (response.status === 429) {
-        throw new Error("Sentry is rate limiting requests. Please try again later.");
-      }
-      throw new Error(`Sentry could not load ${resourceName} (HTTP ${response.status}).`);
-    }
-
-    let pageResults;
-    try {
-      pageResults = await response.json();
-    } catch {
-      throw new Error(`Sentry returned an invalid response for ${resourceName}.`);
-    }
-    if (!Array.isArray(pageResults)) {
-      throw new Error(`Sentry returned an unexpected response for ${resourceName}.`);
-    }
-    results.push(...pageResults);
-    pageUrl = getNextSentryPage(response.headers.get("link"), pageUrl);
-  }
-
-  return results;
-}
-
-function getNextSentryPage(linkHeader, currentUrl) {
-  if (!linkHeader) return null;
-
-  const nextLink = linkHeader
-    .split(/,\s*(?=<)/)
-    .find((link) => /;\s*rel="?next"?/.test(link));
-  if (!nextLink || !/;\s*results="?true"?/.test(nextLink)) return null;
-
-  const match = nextLink.match(/<([^>]+)>/);
-  if (!match) throw new Error("Sentry returned an invalid page link.");
-  return new URL(match[1], currentUrl);
-}
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
@@ -582,8 +424,10 @@ if (!hasSingleInstanceLock) {
   app.whenReady().then(() => {
     app.setAppUserModelId("com.orbit.desktop");
     createWindow();
-    createTray();
-    registerGlobalHotkey();
+    if (!E2E_MODE) {
+      createTray();
+      registerGlobalHotkey();
+    }
   });
 
   app.on("before-quit", () => {

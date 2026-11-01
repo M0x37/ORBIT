@@ -1,0 +1,199 @@
+const { test, expect, _electron: electron } = require("@playwright/test");
+const http = require("node:http");
+const fs = require("node:fs/promises");
+const os = require("node:os");
+const path = require("node:path");
+
+const APP_DIR = path.resolve(__dirname, "..", "..");
+
+function sendJson(response, status, body) {
+  const text = JSON.stringify(body);
+  response.writeHead(status, {
+    "Content-Type": "application/json",
+    "Content-Length": Buffer.byteLength(text)
+  });
+  response.end(text);
+}
+
+async function readJson(request) {
+  const chunks = [];
+  for await (const chunk of request) chunks.push(chunk);
+  return chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) : null;
+}
+
+function createStubServer() {
+  let todos = [];
+  let nextId = 1;
+
+  const server = http.createServer((request, response) => {
+    void (async () => {
+      const url = new URL(request.url, "http://127.0.0.1");
+
+      if (url.pathname === "/forecast") {
+        sendJson(response, 200, { current: { temperature_2m: 7.4, weather_code: 2 } });
+        return;
+      }
+
+      if (url.pathname === "/rest/v1/todos") {
+        if (request.method === "GET") {
+          sendJson(response, 200, todos);
+          return;
+        }
+
+        if (request.method === "POST") {
+          const body = await readJson(request);
+          const item = {
+            id: nextId++,
+            title: body.title,
+            completed: false,
+            created_at: new Date().toISOString()
+          };
+          todos.unshift(item);
+          sendJson(response, 201, [item]);
+          return;
+        }
+
+        if (request.method === "PATCH") {
+          const id = Number(url.searchParams.get("id")?.replace("eq.", ""));
+          const body = await readJson(request);
+          const item = todos.find((entry) => entry.id === id);
+          if (!item) {
+            sendJson(response, 404, { message: "Task not found" });
+            return;
+          }
+          item.completed = Boolean(body.completed);
+          sendJson(response, 200, [item]);
+          return;
+        }
+
+        if (request.method === "DELETE") {
+          const id = Number(url.searchParams.get("id")?.replace("eq.", ""));
+          todos = todos.filter((entry) => entry.id !== id);
+          response.writeHead(204);
+          response.end();
+          return;
+        }
+      }
+
+      sendJson(response, 404, { message: "Not found" });
+    })();
+  });
+
+  return server;
+}
+
+let electronApp;
+let page;
+let server;
+let userDataDir;
+
+test.beforeEach(async () => {
+  server = createStubServer();
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const port = server.address().port;
+  userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), "orbit-e2e-"));
+
+  electronApp = await electron.launch({
+    args: [APP_DIR],
+    env: {
+      ...process.env,
+      ORBIT_E2E: "1",
+      ORBIT_NO_ENV: "1",
+      ORBIT_TEST_USER_DATA: userDataDir,
+      ORBIT_WEATHER_BASE_URL: `http://127.0.0.1:${port}/forecast`,
+      ORBIT_TODO_BASE_URL: `http://127.0.0.1:${port}`
+    }
+  });
+
+  page = await electronApp.firstWindow();
+  await page.waitForLoadState("domcontentloaded");
+});
+
+test.afterEach(async () => {
+  await electronApp?.close();
+  await new Promise((resolve) => server.close(resolve));
+  await fs.rm(userDataDir, { recursive: true, force: true });
+});
+
+test("shows a ticking clock and the stubbed weather", async () => {
+  await expect(page).toHaveTitle(/Orbit/);
+  await expect(page.locator("#sidebar-clock")).toHaveText(/^\d{2}:\d{2}$/);
+  await expect(page.locator("#weather-temp")).toHaveText("7°C");
+  await expect(page.locator("#weather-label")).toHaveText("Partly cloudy");
+
+  const firstTimestamp = await page.locator("#sidebar-clock").getAttribute("datetime");
+  await page.waitForFunction(
+    (previous) => document.querySelector("#sidebar-clock").getAttribute("datetime") !== previous,
+    firstTimestamp,
+    { timeout: 5000 }
+  );
+
+  const clock = await page.evaluate(() => {
+    const element = document.querySelector("#sidebar-clock");
+    const date = new Date(element.getAttribute("datetime"));
+    const expected = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    return { text: element.textContent, expected };
+  });
+
+  expect(clock.text).toBe(clock.expected);
+});
+
+test("navigates between Overview, To-Do, and Links", async () => {
+  await page.locator('[data-page="todo"]').click();
+  await expect(page.locator("#page-title")).toHaveText("To-Do");
+  await expect(page.locator(".todo-section")).toHaveClass(/active/);
+  await expect(page.locator(".shortcuts-section")).not.toHaveClass(/active/);
+
+  await page.locator('[data-page="links"]').click();
+  await expect(page.locator("#page-title")).toHaveText("Links");
+  await expect(page.locator(".links-section")).toHaveClass(/active/);
+  await expect(page.locator(".todo-section")).not.toHaveClass(/active/);
+
+  await page.locator('[data-page="overview"]').click();
+  await expect(page.locator("#page-title")).toHaveText("Overview");
+  await expect(page.locator(".shortcuts-section")).toHaveClass(/active/);
+  await expect(page.locator(".sentry-section")).toHaveClass(/active/);
+});
+
+test("adds, completes, and deletes a To-Do through the real IPC layer", async () => {
+  await page.locator('[data-page="todo"]').click();
+  await expect(page.locator("#page-title")).toHaveText("To-Do");
+  await expect(page.locator("#todo-summary")).toHaveText("0 OPEN · 0 DONE");
+
+  await page.locator("#todo-input").fill("Write tests");
+  await page.locator("#todo-add").click();
+
+  await expect(page.locator(".todo-item")).toHaveCount(1);
+  await expect(page.locator(".todo-item")).toContainText("Write tests");
+  await expect(page.locator("#todo-summary")).toHaveText("1 OPEN · 0 DONE");
+
+  await page.locator(".todo-checkbox").check();
+  await expect(page.locator(".todo-item")).toHaveClass(/is-done/);
+  await expect(page.locator("#todo-summary")).toHaveText("0 OPEN · 1 DONE");
+
+  await page.locator(".todo-delete").click();
+  await expect(page.locator(".todo-item")).toHaveCount(0);
+  await expect(page.locator("#todo-empty")).toBeVisible();
+  await expect(page.locator("#todo-summary")).toHaveText("0 OPEN · 0 DONE");
+});
+
+test("fits the minimum window size without scrolling", async () => {
+  const windowHandle = await electronApp.browserWindow(page);
+  await windowHandle.evaluate((window) => window.setSize(360, 560));
+  await page.waitForTimeout(500);
+
+  await expect(page.locator(".sidebar-widget")).toBeVisible();
+
+  const overflow = await page.evaluate(() => {
+    const root = document.querySelector(".window");
+    return {
+      scrollWidth: root.scrollWidth,
+      clientWidth: root.clientWidth,
+      scrollHeight: root.scrollHeight,
+      clientHeight: root.clientHeight
+    };
+  });
+
+  expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
+  expect(overflow.scrollHeight).toBeLessThanOrEqual(overflow.clientHeight);
+});

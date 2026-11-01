@@ -1275,6 +1275,7 @@
         </div>
       </section>
     </main>
+    <script src="lib/orbit-shared.js"></script>
     <script>
       const maximizeButton = document.querySelector("#maximize");
 
@@ -1334,33 +1335,18 @@
         storm: '<path d="M6 11h8a3 3 0 0 0 .3-6 5 5 0 0 0-9.6-1A3.5 3.5 0 0 0 6 11Z"></path><path d="m10 12-2 4h3l-1 3"></path>'
       };
 
-      function describeWeather(code) {
-        if (code === 0) return { icon: "clear", label: "Clear" };
-        if (code === 1) return { icon: "partly", label: "Mainly clear" };
-        if (code === 2) return { icon: "partly", label: "Partly cloudy" };
-        if (code === 3) return { icon: "cloudy", label: "Overcast" };
-        if (code === 45 || code === 48) return { icon: "fog", label: "Fog" };
-        if (code >= 51 && code <= 57) return { icon: "drizzle", label: "Drizzle" };
-        if (code >= 61 && code <= 67) return { icon: "rain", label: "Rain" };
-        if (code >= 71 && code <= 77) return { icon: "snow", label: "Snow" };
-        if (code >= 80 && code <= 82) return { icon: "rain", label: "Rain showers" };
-        if (code === 85 || code === 86) return { icon: "snow", label: "Snow showers" };
-        if (code >= 95 && code <= 99) return { icon: "storm", label: "Thunderstorm" };
-        return { icon: "cloudy", label: "Unknown" };
-      }
-
       function updateClock() {
         const now = new Date();
-        sidebarClock.textContent = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+        sidebarClock.textContent = OrbitShared.formatClock(now);
         sidebarClock.dateTime = now.toISOString();
       }
 
       async function loadWeather() {
         try {
           const weather = await window.orbitWindow.weather.get();
-          const condition = describeWeather(weather.weatherCode);
+          const condition = OrbitShared.describeWeather(weather.weatherCode);
           weatherIcon.innerHTML = WEATHER_ICONS[condition.icon];
-          weatherTemp.textContent = `${weather.temperature}°C`;
+          weatherTemp.textContent = OrbitShared.formatTemperature(weather.temperature);
           weatherLabel.textContent = condition.label;
         } catch {
           weatherIcon.innerHTML = "";
@@ -1403,8 +1389,7 @@
           title.textContent = issue.title;
           const detail = document.createElement("span");
           detail.className = "sentry-error-detail";
-          const lastSeen = issue.lastSeen ? new Date(issue.lastSeen).toLocaleString("en-US") : "";
-          detail.textContent = [issue.project, issue.culprit, `${issue.count} Events`, lastSeen].filter(Boolean).join(" · ");
+          detail.textContent = OrbitShared.formatSentryDetail(issue);
           copy.append(title, detail);
 
           const meta = document.createElement("span");
@@ -1579,15 +1564,12 @@
       }
 
       function todoErrorMessage(error, fallback) {
-        const message = String(error?.message || "").replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "");
-        return message || fallback;
+        return OrbitShared.todoErrorMessage(error, fallback);
       }
 
       function renderTodos(items) {
         todoList.replaceChildren();
-        const open = items.filter((item) => !item.completed).length;
-        const done = items.length - open;
-        todoSummary.textContent = `${open} OPEN · ${done} DONE`;
+        todoSummary.textContent = OrbitShared.formatTodoSummary(items);
         todoEmpty.textContent = "No tasks yet. Add your first one above.";
         todoEmpty.hidden = items.length > 0;
 

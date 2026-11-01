@@ -1,15 +1,22 @@
 {
   "name": "orbit-desktop",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "private": true,
   "description": "Orbit Desktop App",
   "author": "Max",
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
-    "build:win": "electron-builder --win portable"
+    "build:win": "electron-builder --win portable",
+    "check": "node --check main.cjs && node --check preload.cjs && node --check lib/orbit-shared.js && node --check lib/weather-service.cjs && node --check lib/todo-service.cjs && node --check lib/sentry-service.cjs",
+    "test:unit": "node --test \"tests/unit/**/*.test.cjs\"",
+    "test:integration": "node --test \"tests/integration/**/*.test.cjs\"",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:e2e": "playwright test",
+    "test:all": "npm run check && npm run test && npm run test:e2e"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "electron": "^45.0.0",
     "electron-builder": "^26.0.12"
   },
@@ -23,6 +30,7 @@
       "main.cjs",
       "preload.cjs",
       "package.json",
+      "lib/**/*",
       "assets/orbit.ico"
     ],
     "win": {

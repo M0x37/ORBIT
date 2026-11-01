@@ -1,4 +1,16 @@
 # Changelog - Orbit Desktop App
+## [1.8.0] - 2026-11-01
+
+### Added
+- Unit tests for shared logic (weather mapping, clock, To-Do formatting, Sentry parsing/pagination)
+- Integration tests for the weather, To-Do, and Sentry services with mocked network calls
+- Electron end-to-end tests for the clock/weather widget, page navigation, and To-Do flow
+- GitHub Actions pipeline: syntax, unit, integration, E2E, portable build, and release on tags
+
+### Changed
+- Pure logic moved into `lib/` modules shared by the main process and the renderer
+- Network services now accept injected `fetch` implementations for testability
+
 ## [1.7.0] - 2026-11-01
 
 ### Added
@@ -189,3 +201,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Weather location is hardcoded; changing it requires a code change
 - No forecast, only current conditions
 - Weather is fetched from the main process, so it also works with the window hidden
+
+---
+
+## Session Notes 2026-11-01 (testing)
+
+**Work request**: Add real tests and testing stages, then push the complete app to GitHub
+
+**Steps taken**:
+1. Imported the app into Git and pushed it to `M0x37/ORBIT`
+2. Extracted shared logic into `lib/orbit-shared.js` and network code into injectable services
+3. Added unit tests for pure functions and integration tests for all three network services
+4. Added Playwright Electron tests for the widget, navigation, To-Do flow, and minimum window size
+5. Added a GitHub Actions pipeline that gates build and release on green tests
+6. Bumped version 1.7.0 → 1.8.0
+
+**Open topics / Known issues**:
+- CI runs E2E on Windows only; Linux/macOS packaging is not configured
+- Release requires pushing a tag that matches the `package.json` version
+- `npm audit` reports moderate vulnerabilities in the Electron build toolchain

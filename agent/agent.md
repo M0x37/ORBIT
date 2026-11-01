@@ -6,6 +6,9 @@ This directory contains agent-related documentation and rules for the Orbit Desk
 - `agent.md` - Main agent documentation
 - `rules.md` - Rules and guidelines for agents working on this project
 - `changelog-skill.md` - Automatic changelog workflow for "Write to the changelog"
+- `../lib/` - Shared logic and injectable services covered by tests
+- `../tests/` - unit, integration, and Playwright Electron tests
+- `../.github/workflows/ci.yml` - Test-gated build and release pipeline
 
 ## Project Overview
 Orbit Desktop App is an Electron-based dashboard application with:

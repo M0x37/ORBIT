@@ -5,13 +5,20 @@ Orbit Desktop: a single-window Electron dashboard shipped as a portable Windows 
 ## Commands
 - `npm start` — run the app with Electron; dev mode reads `.env` from the repo root.
 - `npm run build:win` — electron-builder portable build to `dist/Orbit-Portable-<version>.exe` (Windows only).
-- There are no lint, typecheck, or test scripts; verify by launching the app and building.
+- `npm run check` — syntax-check main, preload, and `lib/` scripts.
+- `npm test` — unit + integration tests with `node:test` (no network).
+- `npm run test:e2e` — Playwright Electron tests (Windows; launches the real app against local stubs).
+- `npm run test:all` — check + unit + integration + E2E.
+- `.github/workflows/ci.yml` gates the portable build and GitHub Release on green tests.
 
 ## Architecture
-- `main.cjs` — main process: frameless window, system tray, `Alt+A` global hotkey, single-instance lock, all `ipcMain` handlers (`window:*`, `shortcut:open` for URLs and local apps, `todo:*` for Supabase To-Do CRUD, `sentry:*`), Sentry API calls.
+- `main.cjs` — main process: frameless window, system tray, `Alt+A` global hotkey, single-instance lock, all `ipcMain` handlers (`window:*`, `shortcut:open` for URLs and local apps, `todo:*` for Supabase To-Do CRUD, `sentry:*`, `weather:current`), Sentry API calls.
 - `preload.cjs` — the only renderer API surface, exposed as `window.orbitWindow` via `contextBridge`.
-- `index.html` — the entire renderer: inline CSS + inline JS. Edit styles and behavior here directly.
-- `agent/` — project rules/docs. It is **not** shipped: `build.files` in `package.json` only includes `index.html`, `main.cjs`, `preload.cjs`, `package.json`, and `assets/orbit.ico`.
+- `index.html` — the renderer: inline CSS + inline JS, plus `lib/orbit-shared.js` loaded as a classic script.
+- `lib/orbit-shared.js` — UMD module shared by main and renderer: weather mapping, clock/temperature formatting, To-Do/Sentry formatting and validation, Sentry pagination.
+- `lib/*-service.cjs` — injectable-`fetch` services for weather, To-Do, and Sentry; covered by integration tests.
+- `tests/` — `unit/` (pure logic), `integration/` (mocked services), `e2e/` (Playwright Electron).
+- `agent/` — project rules/docs. It is **not** shipped: `build.files` in `package.json` includes `index.html`, `main.cjs`, `preload.cjs`, `package.json`, `lib/**/*`, and `assets/orbit.ico`.
 
 ## Gotchas
 - Keep the renderer sandboxed (`contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`). Add native features through `preload.cjs` + `ipcMain`, never by enabling Node in the renderer.
@@ -20,7 +27,8 @@ Orbit Desktop: a single-window Electron dashboard shipped as a portable Windows 
 - Page switching is manual in `showPage()`: the overview page activates `.shortcuts-section` and `.sentry-section`; To-Do activates `.todo-section`; links activates `.links-section`. New pages must be registered there and use the `.page-section` convention.
 - To-Do uses the Supabase project at `https://yklavrwnlzizftzytehf.supabase.co` and the existing `public.todos` table (`id`, `title`, `completed`, `created_at`). The publishable key is safe to ship; use main-process REST calls through `todo:*`, never renderer Node access.
 - Closing the window hides Orbit to the system tray; use `Quit Orbit` in the tray menu to exit. `Alt+A` toggles the window, and the app enforces a single instance. Autostart is intentionally not implemented.
-- Version bumps are expected for fixes: update `package.json` `version` and add a changelog entry before rebuilding (see `agent/rules.md`).
+- Test hooks (production-safe, env-only): `ORBIT_TEST_USER_DATA` isolates `userData`, `ORBIT_E2E=1` skips tray/hotkey, `ORBIT_NO_ENV=1` ignores `.env`, `ORBIT_WEATHER_BASE_URL` / `ORBIT_TODO_BASE_URL` point at local stubs. Never let tests hit real Supabase/Sentry/Open-Meteo.
+- Version bumps are expected for fixes: update `package.json` `version` and add a changelog entry before rebuilding (see `agent/rules.md`). Releases are tags `v<version>` that must match `package.json`; CI fails otherwise.
 
 ## Changelog
 - Trigger phrases like "Write to the changelog" or "Update changelog" mean: follow `agent/changelog-skill.md` — bump version, add an English Keep-a-Changelog entry, rebuild, delete older `dist/Orbit-Portable-*.exe`, and launch the new EXE.

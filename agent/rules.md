@@ -15,9 +15,10 @@
 - When making fixes, always create a new version build and update the version number in package.json
 
 ## Verification
+- Run `npm run check`, `npm test`, and `npm run test:e2e` before building
 - After making changes, run `npm run build:win` to rebuild the EXE
 - Check that the output matches expectations
-- If lint/typecheck commands exist, run them to verify code correctness
+- CI (`.github/workflows/ci.yml`) must pass before a build or release; tests use mocked services, never live APIs
 
 ## Commit Policy
 - Only commit changes when explicitly requested by the user
