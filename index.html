@@ -1,0 +1,1718 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#090a0c">
+    <title>Orbit — App Dashboard</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        --muted: #85878f;
+        --line: rgba(255, 255, 255, 0.09);
+        --panel: rgba(255, 255, 255, 0.035);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        overflow: hidden;
+        color: #f5f5f7;
+        background: transparent;
+      }
+
+      button {
+        color: inherit;
+        font: inherit;
+      }
+
+      .desktop {
+        display: grid;
+        min-height: 100vh;
+        place-items: center;
+        padding: 20px;
+        background: radial-gradient(ellipse at 50% 48%, rgba(59, 63, 72, 0.2), transparent 48%);
+      }
+
+      .window {
+        display: flex;
+        width: min(920px, 100%);
+        height: min(760px, calc(100vh - 40px));
+        min-height: 320px;
+        flex-direction: column;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
+        background: rgba(20, 21, 24, 0.93);
+        box-shadow: 0 32px 100px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.025);
+        backdrop-filter: blur(28px);
+        -webkit-backdrop-filter: blur(28px);
+        transition: width 220ms ease, height 220ms ease, border-radius 220ms ease, opacity 180ms ease;
+      }
+
+      .titlebar {
+        display: flex;
+        height: 48px;
+        min-height: 48px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 12px 0 18px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.025);
+        user-select: none;
+        -webkit-app-region: drag;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #d8d9dd;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.035em;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 19px;
+        height: 19px;
+        place-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 6px;
+        color: #fff;
+        font-size: 10px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .window-controls {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        -webkit-app-region: no-drag;
+      }
+
+      .control {
+        display: grid;
+        width: 31px;
+        height: 30px;
+        padding: 0;
+        place-items: center;
+        border: 0;
+        border-radius: 6px;
+        color: #a7a8ae;
+        background: transparent;
+        cursor: pointer;
+        transition: color 140ms ease, background 140ms ease;
+      }
+
+      .control:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .control-close:hover {
+        color: #fff;
+        background: #d94a4a;
+      }
+
+      .control svg {
+        width: 13px;
+        height: 13px;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.4;
+      }
+
+      .window-content {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+      }
+
+      .sidebar {
+        display: flex;
+        width: 206px;
+        flex: 0 0 206px;
+        flex-direction: column;
+        padding: 20px 12px 14px;
+        border-right: 1px solid var(--line);
+        background: rgba(0, 0, 0, 0.12);
+      }
+
+      .sidebar-label {
+        margin: 0 10px 12px;
+        color: #686a72;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .sidebar-item {
+        display: flex;
+        min-height: 38px;
+        align-items: center;
+        gap: 10px;
+        padding: 0 10px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        color: #a1a2a9;
+        font-size: 12px;
+        text-align: left;
+        background: transparent;
+        cursor: pointer;
+      }
+
+      .sidebar-item[aria-current="page"] {
+        border-color: rgba(255, 255, 255, 0.075);
+        color: #f1f1f3;
+        background: rgba(255, 255, 255, 0.075);
+      }
+
+      .sidebar-item svg {
+        width: 16px;
+        height: 16px;
+        flex: 0 0 auto;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.5;
+      }
+
+      .sidebar-widget {
+        display: flex;
+        margin-top: auto;
+        flex-direction: column;
+        gap: 4px;
+        padding: 12px 10px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .sidebar-clock {
+        color: #f1f1f3;
+        font-size: 22px;
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      .sidebar-weather {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .sidebar-weather svg {
+        width: 14px;
+        height: 14px;
+        flex: 0 0 auto;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.5;
+      }
+
+      .sidebar-weather-temp {
+        flex: 0 0 auto;
+        color: #d7d8dc;
+      }
+
+      .sidebar-weather-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .page-content {
+        min-width: 0;
+        min-height: 0;
+        flex: 1;
+        overflow: auto;
+        padding: 34px clamp(22px, 5vw, 54px);
+        scrollbar-color: rgba(220, 220, 225, 0.2) transparent;
+        scrollbar-width: thin;
+      }
+
+      .page-content::-webkit-scrollbar {
+        width: 7px;
+      }
+
+      .page-content::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .page-content::-webkit-scrollbar-thumb {
+        border: 2px solid transparent;
+        border-radius: 999px;
+        background: rgba(220, 220, 225, 0.2);
+        background-clip: padding-box;
+      }
+
+      .page-content::-webkit-scrollbar-thumb:hover {
+        background: rgba(220, 220, 225, 0.36);
+        background-clip: padding-box;
+      }
+
+      .page-eyebrow {
+        margin: 0 0 9px;
+        color: #85878f;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .page-title {
+        margin: 0;
+        font-size: clamp(23px, 4vw, 30px);
+        font-weight: 600;
+        letter-spacing: -0.045em;
+      }
+
+      .shortcuts-section,
+      .links-section {
+        margin-top: 26px;
+      }
+
+      .sentry-section {
+        margin-top: 24px;
+      }
+
+      .section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 13px;
+      }
+
+      .section-heading h2 {
+        margin: 0;
+        color: #d8d9dd;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .shortcut-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 11px;
+      }
+
+      .shortcut-card {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 7px;
+        padding: 7px 4px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        color: #f1f1f3;
+        text-align: left;
+        background: transparent;
+        cursor: pointer;
+        transition: color 160ms ease, transform 160ms ease;
+      }
+
+      .shortcut-card:hover {
+        transform: translateY(-1px);
+        color: #fff;
+      }
+
+      .shortcut-card:focus-visible,
+      .sidebar-item:focus-visible,
+      .control:focus-visible {
+        outline: 2px solid rgba(220, 220, 225, 0.7);
+        outline-offset: 2px;
+      }
+
+      .shortcut-icon {
+        display: grid;
+        width: 40px;
+        height: 40px;
+        place-items: center;
+        color: #e3e4e8;
+      }
+
+      .shortcut-name {
+        color: #a5a6ad;
+        font-size: 10px;
+        font-weight: 500;
+      }
+
+      .shortcut-icon svg {
+        width: 21px;
+        height: 21px;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.6;
+      }
+
+      .shortcut-icon .icon-fill {
+        fill: currentColor;
+        stroke: none;
+      }
+
+      .shortcut-status {
+        min-height: 17px;
+        margin: 10px 0 0;
+        color: #a9aab0;
+        font-size: 11px;
+      }
+
+      .sentry-panel {
+        overflow: hidden;
+        min-height: 0;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 24px;
+        background: rgba(28, 28, 30, 0.92);
+      }
+
+      .sentry-panel-header {
+        display: flex;
+        min-height: 58px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 0 22px;
+      }
+
+      .sentry-header-label,
+      .sentry-header-right {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+      }
+
+      .sentry-header-label {
+        gap: 10px;
+      }
+
+      .sentry-header-right {
+        gap: 12px;
+      }
+
+      .sentry-panel-title {
+        margin: 0;
+        color: #c3c4c9;
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.2em;
+        white-space: nowrap;
+      }
+
+      .sentry-mark {
+        width: 6px;
+        height: 6px;
+        flex: 0 0 6px;
+        border-radius: 50%;
+        background: #74767d;
+      }
+
+      .sentry-summary {
+        color: #81838b;
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 10px;
+        letter-spacing: 0.035em;
+        white-space: nowrap;
+      }
+
+      .sentry-icon-button {
+        display: grid;
+        width: 30px;
+        height: 30px;
+        flex: 0 0 30px;
+        place-items: center;
+        padding: 0;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 50%;
+        color: #92949b;
+        background: transparent;
+        font-size: 0;
+        line-height: 0;
+        cursor: pointer;
+      }
+
+      .sentry-icon-button:hover:not(:disabled) {
+        border-color: rgba(255, 255, 255, 0.25);
+        color: #e5e5e8;
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .sentry-icon-button:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+
+      .sentry-icon-button:focus-visible,
+      .sentry-input:focus-visible {
+        outline: 2px solid rgba(220, 220, 225, 0.7);
+        outline-offset: 2px;
+      }
+
+      .sentry-icon-button svg {
+        width: 14px;
+        height: 14px;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.4;
+      }
+
+      .sentry-body {
+        min-height: 0;
+        padding: 12px 22px 14px;
+      }
+
+      .sentry-message {
+        margin: 0;
+        color: #95979f;
+        font-size: 11px;
+        line-height: 1.55;
+      }
+
+      .sentry-empty-state {
+        display: grid;
+        min-height: 125px;
+        place-items: center;
+        color: #777981;
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      .sentry-form {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .sentry-field {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .sentry-field-token {
+        grid-column: 1 / -1;
+      }
+
+      .sentry-field label {
+        color: #a4a5ac;
+        font-size: 10px;
+      }
+
+      .sentry-input {
+        width: 100%;
+        min-width: 0;
+        height: 32px;
+        padding: 0 9px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        color: #ededf0;
+        font: inherit;
+        font-size: 11px;
+        background: rgba(0, 0, 0, 0.2);
+      }
+
+      .sentry-input::placeholder {
+        color: #62646c;
+      }
+
+      .sentry-form-footer {
+        display: flex;
+        grid-column: 1 / -1;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .sentry-error-list {
+        display: grid;
+        gap: 7px;
+        max-height: 360px;
+        overflow-y: auto;
+        padding-right: 4px;
+        scrollbar-color: rgba(220, 220, 225, 0.2) transparent;
+        scrollbar-width: thin;
+      }
+
+      .sentry-error-list::-webkit-scrollbar {
+        width: 7px;
+      }
+
+      .sentry-error-list::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .sentry-error-list::-webkit-scrollbar-thumb {
+        border: 2px solid transparent;
+        border-radius: 999px;
+        background: rgba(220, 220, 225, 0.2);
+        background-clip: padding-box;
+      }
+
+      .sentry-error-list::-webkit-scrollbar-thumb:hover {
+        background: rgba(220, 220, 225, 0.36);
+        background-clip: padding-box;
+      }
+
+      .sentry-error-list::-webkit-scrollbar {
+        width: 7px;
+      }
+
+      .sentry-error-list::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .sentry-error-list::-webkit-scrollbar-thumb {
+        border: 2px solid transparent;
+        border-radius: 999px;
+        background: rgba(220, 220, 225, 0.2);
+        background-clip: padding-box;
+      }
+
+      .sentry-error-list::-webkit-scrollbar-thumb:hover {
+        background: rgba(220, 220, 225, 0.36);
+        background-clip: padding-box;
+      }
+
+      .sentry-error-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 9px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.055);
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.025);
+      }
+
+      .sentry-error-copy {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .sentry-error-title {
+        overflow: hidden;
+        color: #dedfe3;
+        font-size: 11px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .sentry-error-detail {
+        overflow: hidden;
+        color: #85878f;
+        font-size: 10px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .sentry-error-level {
+        flex: 0 0 auto;
+        color: #a6a7ad;
+        font-size: 9px;
+        text-transform: uppercase;
+      }
+
+      .sentry-error-meta {
+        display: flex;
+        flex: 0 0 auto;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+      }
+
+      .sentry-error-state {
+        color: #85878f;
+        font-size: 9px;
+        text-transform: capitalize;
+      }
+
+      .sentry-error-meta {
+        display: flex;
+        flex: 0 0 auto;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+      }
+
+      .sentry-error-state {
+        color: #85878f;
+        font-size: 9px;
+        text-transform: capitalize;
+      }
+
+      .sentry-error {
+        color: #e1a0a0;
+      }
+
+      .sentry-empty {
+        padding: 8px 0;
+        color: #92949b;
+        font-size: 11px;
+      }
+
+      .todo-section {
+        margin-top: 24px;
+      }
+
+      .todo-panel {
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 24px;
+        background: rgba(28, 28, 30, 0.92);
+      }
+
+      .todo-panel-header {
+        display: flex;
+        min-height: 58px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 0 22px;
+      }
+
+      .todo-header-label,
+      .todo-header-right {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+      }
+
+      .todo-header-label {
+        gap: 10px;
+      }
+
+      .todo-header-right {
+        gap: 12px;
+      }
+
+      .todo-panel-title {
+        margin: 0;
+        color: #c3c4c9;
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.2em;
+        white-space: nowrap;
+      }
+
+      .todo-mark {
+        width: 6px;
+        height: 6px;
+        flex: 0 0 6px;
+        border-radius: 50%;
+        background: #74767d;
+      }
+
+      .todo-summary {
+        overflow: hidden;
+        color: #81838b;
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 10px;
+        letter-spacing: 0.035em;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .todo-body {
+        padding: 12px 22px 14px;
+      }
+
+      .todo-form {
+        display: flex;
+        gap: 8px;
+      }
+
+      .todo-input {
+        width: 100%;
+        min-width: 0;
+        height: 32px;
+        flex: 1;
+        padding: 0 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        color: #ededf0;
+        font: inherit;
+        font-size: 11px;
+        background: rgba(0, 0, 0, 0.2);
+      }
+
+      .todo-input::placeholder {
+        color: #62646c;
+      }
+
+      .todo-add {
+        height: 32px;
+        padding: 0 14px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 6px;
+        color: #ededf0;
+        background: rgba(255, 255, 255, 0.07);
+        font: inherit;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .todo-add:hover:not(:disabled) {
+        border-color: rgba(255, 255, 255, 0.25);
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .todo-add:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+
+      .todo-input:focus-visible,
+      .todo-add:focus-visible,
+      .todo-delete:focus-visible,
+      .todo-checkbox:focus-visible {
+        outline: 2px solid rgba(220, 220, 225, 0.7);
+        outline-offset: 2px;
+      }
+
+      .todo-list {
+        display: grid;
+        gap: 7px;
+        max-height: 155px;
+        overflow-y: auto;
+        margin-top: 12px;
+        padding-right: 4px;
+        scrollbar-color: rgba(220, 220, 225, 0.2) transparent;
+        scrollbar-width: thin;
+      }
+
+      .todo-list:empty {
+        display: none;
+      }
+
+      .todo-list::-webkit-scrollbar {
+        width: 7px;
+      }
+
+      .todo-list::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .todo-list::-webkit-scrollbar-thumb {
+        border: 2px solid transparent;
+        border-radius: 999px;
+        background: rgba(220, 220, 225, 0.2);
+        background-clip: padding-box;
+      }
+
+      .todo-list::-webkit-scrollbar-thumb:hover {
+        background: rgba(220, 220, 225, 0.36);
+        background-clip: padding-box;
+      }
+
+      .todo-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.055);
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.025);
+      }
+
+      .todo-item.is-done .todo-title {
+        color: #85878f;
+        text-decoration: line-through;
+      }
+
+      .todo-checkbox {
+        width: 15px;
+        height: 15px;
+        flex: 0 0 15px;
+        margin: 0;
+        accent-color: #a9aab0;
+        cursor: pointer;
+      }
+
+      .todo-title {
+        overflow: hidden;
+        min-width: 0;
+        flex: 1;
+        color: #dedfe3;
+        font-size: 11px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .todo-delete {
+        display: grid;
+        width: 24px;
+        height: 24px;
+        flex: 0 0 24px;
+        place-items: center;
+        padding: 0;
+        border: 0;
+        border-radius: 6px;
+        color: #777981;
+        background: transparent;
+        font-size: 0;
+        line-height: 0;
+        cursor: pointer;
+      }
+
+      .todo-delete:hover:not(:disabled) {
+        color: #e1a0a0;
+        background: rgba(225, 160, 160, 0.08);
+      }
+
+      .todo-delete:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+
+      .todo-delete svg {
+        width: 13px;
+        height: 13px;
+        fill: none;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1.5;
+      }
+
+      .todo-empty {
+        display: grid;
+        min-height: 140px;
+        place-items: center;
+        padding: 0 10px;
+        color: #777981;
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        line-height: 1.6;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      .todo-empty[hidden] {
+        display: none;
+      }
+
+      .todo-status {
+        min-height: 15px;
+        margin: 9px 0 0;
+        color: #92949b;
+        font-size: 10px;
+      }
+
+      .todo-status.is-error {
+        color: #e1a0a0;
+      }
+
+      .window.is-maximized {
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+      }
+
+      .desktop:has(.window.is-maximized) {
+        padding: 0;
+      }
+
+      @media (max-width: 600px) {
+        .desktop {
+          padding: 12px;
+        }
+
+        .window {
+          height: calc(100vh - 24px);
+          min-height: 0;
+        }
+
+        .sidebar {
+          width: 118px;
+          flex-basis: 118px;
+          padding-right: 8px;
+          padding-left: 8px;
+        }
+
+        .page-content {
+          padding: 18px 12px;
+        }
+
+        @media (max-height: 620px) {
+          .desktop {
+            padding-top: 10px;
+            padding-bottom: 10px;
+          }
+
+          .window {
+            height: calc(100vh - 20px);
+            min-height: 0;
+          }
+
+          .page-content {
+            padding-top: 12px;
+            padding-bottom: 12px;
+          }
+
+          .shortcuts-section,
+          .links-section {
+            margin-top: 16px;
+          }
+
+          .sentry-section,
+          .todo-section {
+            margin-top: 14px;
+          }
+
+          .sentry-panel {
+            min-height: 0;
+          }
+
+          .sentry-body,
+          .todo-body {
+            padding-top: 8px;
+            padding-bottom: 10px;
+          }
+
+          .sentry-empty-state,
+          .todo-empty {
+            min-height: 82px;
+          }
+
+          .sentry-error-list,
+          .todo-list {
+            max-height: 120px;
+          }
+        }
+
+        .shortcut-card {
+          gap: 0;
+          padding: 5px;
+        }
+
+        .shortcut-icon {
+          width: 30px;
+          height: 30px;
+        }
+
+        .shortcut-icon svg {
+          width: 18px;
+          height: 18px;
+        }
+
+        .sentry-body,
+        .sentry-panel-header,
+        .todo-body,
+        .todo-panel-header {
+          padding-right: 10px;
+          padding-left: 10px;
+        }
+      }
+
+      .page-section {
+        display: none;
+        animation: fadeIn 200ms ease;
+      }
+      .page-section.active {
+        display: block;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="desktop">
+      <section class="window" id="app-window" aria-label="Orbit app window">
+        <header class="titlebar">
+          <div class="brand">
+            <span class="brand-mark" aria-hidden="true">O</span>
+            <span>ORBIT</span>
+          </div>
+          <nav class="window-controls" aria-label="Window controls">
+            <button class="control" id="search" type="button" aria-label="Open Chrome" title="Open Chrome">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M7 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM14 14l-3-3"></path></svg>
+            </button>
+            <button class="control" id="minimize" type="button" aria-label="Minimize" title="Minimize">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10"></path></svg>
+            </button>
+            <button class="control" id="maximize" type="button" aria-label="Maximize" title="Maximize">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1"></rect></svg>
+            </button>
+            <button class="control control-close" id="close" type="button" aria-label="Close" title="Close">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8"></path></svg>
+            </button>
+          </nav>
+        </header>
+        <div class="window-content">
+          <aside class="sidebar" aria-label="Main navigation">
+            <p class="sidebar-label">Workspace</p>
+            <button class="sidebar-item" type="button" aria-current="page" data-page="overview">
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <rect x="3" y="3" width="5.5" height="5.5" rx="1"></rect>
+                <rect x="11.5" y="3" width="5.5" height="5.5" rx="1"></rect>
+                <rect x="3" y="11.5" width="5.5" height="5.5" rx="1"></rect>
+                <rect x="11.5" y="11.5" width="5.5" height="5.5" rx="1"></rect>
+              </svg>
+              <span>Overview</span>
+            </button>
+            <button class="sidebar-item" type="button" data-page="todo">
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M3.5 5.5 5 7l2.5-2.5"></path>
+                <path d="M9 5.5h7.5"></path>
+                <path d="M3.5 10.5 5 12l2.5-2.5"></path>
+                <path d="M9 10.5h7.5"></path>
+                <path d="M3.5 15.5 5 17l2.5-2.5"></path>
+                <path d="M9 15.5h7.5"></path>
+              </svg>
+              <span>To-Do</span>
+            </button>
+            <button class="sidebar-item" type="button" data-page="links">
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M8.5 11.5 11.5 8.5"></path>
+                <path d="m7 9.5-1.8 1.8a2.7 2.7 0 0 0 3.8 3.8l1.8-1.8"></path>
+                <path d="m13 10.5 1.8-1.8a2.7 2.7 0 0 0-3.8-3.8l-1.8 1.8"></path>
+              </svg>
+              <span>Links</span>
+            </button>
+            <div class="sidebar-widget" aria-label="Time and weather">
+              <time class="sidebar-clock" id="sidebar-clock">--:--</time>
+              <div class="sidebar-weather">
+                <svg id="weather-icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3.5"></circle><path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M15.3 4.7l-1.4 1.4M6.1 13.9l-1.4 1.4"></path></svg>
+                <span class="sidebar-weather-temp" id="weather-temp">&mdash;</span>
+                <span class="sidebar-weather-label" id="weather-label">Loading&hellip;</span>
+              </div>
+            </div>
+          </aside>
+          <main class="page-content">
+            <p class="page-eyebrow" id="page-eyebrow">Workspace</p>
+            <h1 class="page-title" id="page-title">Overview</h1>
+
+            <section class="shortcuts-section page-section active" aria-labelledby="shortcuts-heading">
+              <div class="section-heading">
+                <h2 id="shortcuts-heading">Shortcuts</h2>
+              </div>
+              <div class="shortcut-grid">
+                <button class="shortcut-card" type="button" data-shortcut="youtube" aria-label="Open YouTube">
+                  <span class="shortcut-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="4"></rect><path class="icon-fill" d="m10 9 5.5 3-5.5 3z"></path></svg>
+                  </span>
+                  <span class="shortcut-name">YouTube</span>
+                </button>
+                <button class="shortcut-card" type="button" data-shortcut="github" aria-label="Open GitHub">
+                  <span class="shortcut-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M8.2 19.4c-3.2 1-3.2-1.6-4.5-2m9 4v-2.5a2.2 2.2 0 0 0-.6-1.7c3.7-.4 7.6-1.8 7.6-8A6.2 6.2 0 0 0 18 5a5.8 5.8 0 0 0-.1-4.3s-1.4-.4-4.5 1.7a15.5 15.5 0 0 0-8.2 0C2.1.3.7.7.7.7A5.8 5.8 0 0 0 .6 5 6.2 6.2 0 0 0-1 9.3c0 6.2 3.9 7.6 7.6 8a2.2 2.2 0 0 0-.6 1.7v2.4" transform="translate(3 1) scale(.83)"></path></svg>
+                  </span>
+                  <span class="shortcut-name">GitHub</span>
+                </button>
+                <button class="shortcut-card" type="button" data-shortcut="cloudflare" aria-label="Open Cloudflare">
+                  <span class="shortcut-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M6 18h11.5a3.5 3.5 0 0 0 .3-7 5.8 5.8 0 0 0-11.2-1.2A4.1 4.1 0 0 0 6 18Z"></path><path d="M9 15h9"></path></svg>
+                  </span>
+                  <span class="shortcut-name">Cloudflare</span>
+                </button>
+                <button class="shortcut-card" type="button" data-shortcut="vercel" aria-label="Open Vercel">
+                  <span class="shortcut-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M12 3 23 21H1L12 3Z"></path></svg>
+                  </span>
+                  <span class="shortcut-name">Vercel</span>
+                </button>
+              </div>
+              <p class="shortcut-status" id="shortcut-status" role="status" aria-live="polite"></p>
+            </section>
+
+<section class="sentry-section page-section active" aria-labelledby="sentry-heading">
+              <div class="sentry-panel">
+                <div class="sentry-panel-header">
+                  <div class="sentry-header-label">
+                    <span class="sentry-mark" aria-hidden="true"></span>
+                    <h2 class="sentry-panel-title" id="sentry-heading">SENTRY · ALL PROJECTS</h2>
+                  </div>
+                  <div class="sentry-header-right">
+                    <span class="sentry-summary" id="sentry-summary">— PROJECTS · — ISSUES</span>
+                    <button class="sentry-icon-button" id="sentry-configure-toggle" type="button" aria-label="Sentry settings" title="Sentry settings">
+                      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8 2h4l.5 2a6.5 6.5 0 0 1 1.4.8l2-.6 2 3.5-1.5 1.4a6.6 6.6 0 0 1 0 1.7l1.5 1.4-2 3.5-2-.6a6.5 6.5 0 0 1-1.4.8l-.5 2H8l-.5-2a6.5 6.5 0 0 1-1.4.8l-2 .6-2-3.5 1.5-1.4a6.6 6.6 0 0 1 0-1.7L2.1 7.7l2-3.5 2 .6A6.5 6.5 0 0 1 7.5 4L8 2Z"></path><circle cx="10" cy="10" r="2.4"></circle></svg>
+                    </button>
+                    <button class="sentry-icon-button" id="sentry-refresh" type="button" aria-label="Refresh Sentry" title="Refresh" hidden>
+                      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16.5 7A7 7 0 0 0 4.2 5.2L3 6.5"></path><path d="M3 3.5v3h3"></path><path d="M3.5 13A7 7 0 0 0 15.8 14.8l1.2-1.3"></path><path d="M17 16.5v-3h-3"></path></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="sentry-body" id="sentry-body">
+                  <p class="sentry-message" id="sentry-message" role="status" aria-live="polite">
+                    Connect Sentry to see unresolved errors from the last 14 days.
+                  </p>
+                  <div class="sentry-empty-state" id="sentry-empty" hidden>No unresolved errors in the last 14 days</div>
+                  <form class="sentry-form" id="sentry-form" hidden>
+                    <div class="sentry-field">
+                      <label for="sentry-organization">Organization slug</label>
+                      <input class="sentry-input" id="sentry-organization" name="organization" autocomplete="organization" required pattern="[A-Za-z0-9_-]+" maxlength="100" placeholder="my-organization">
+                    </div>
+                    <div class="sentry-field">
+                      <label for="sentry-project">Project slug</label>
+                      <input class="sentry-input" id="sentry-project" name="project" required pattern="[A-Za-z0-9_-]+" maxlength="100" placeholder="my-project">
+                    </div>
+                    <div class="sentry-field sentry-field-token">
+                      <label for="sentry-token">Sentry Auth Token</label>
+                      <input class="sentry-input" id="sentry-token" name="token" type="password" autocomplete="off" required minlength="8" maxlength="256" placeholder="Token is encrypted and stored locally">
+                    </div>
+                    <div class="sentry-form-footer">
+                      <span class="sentry-message">The token is never shown in the app interface.</span>
+                      <button class="sentry-action" id="sentry-clear" type="button" hidden>Disconnect</button>
+                      <button class="sentry-action" id="sentry-save" type="submit">Connect</button>
+                    </div>
+                  </form>
+                  <div class="sentry-error-list" id="sentry-errors"></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="todo-section page-section" aria-labelledby="todo-heading">
+              <div class="todo-panel">
+                <div class="todo-panel-header">
+                  <div class="todo-header-label">
+                    <span class="todo-mark" aria-hidden="true"></span>
+                    <h2 class="todo-panel-title" id="todo-heading">TO-DO · CLOUD</h2>
+                  </div>
+                  <div class="todo-header-right">
+                    <span class="todo-summary" id="todo-summary">0 OPEN · 0 DONE</span>
+                    <button class="sentry-icon-button" id="todo-refresh" type="button" aria-label="Refresh To-Do" title="Refresh">
+                      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16.5 7A7 7 0 0 0 4.2 5.2L3 6.5"></path><path d="M3 3.5v3h3"></path><path d="M3.5 13A7 7 0 0 0 15.8 14.8l1.2-1.3"></path><path d="M17 16.5v-3h-3"></path></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="todo-body">
+                  <form class="todo-form" id="todo-form">
+                    <input class="todo-input" id="todo-input" name="title" type="text" maxlength="500" placeholder="Add a task..." autocomplete="off" required>
+                    <button class="todo-add" id="todo-add" type="submit">Add</button>
+                  </form>
+                  <div class="todo-empty" id="todo-empty" hidden>No tasks yet. Add your first one above.</div>
+                  <div class="todo-list" id="todo-list"></div>
+                  <p class="todo-status" id="todo-status" role="status" aria-live="polite"></p>
+                </div>
+              </div>
+            </section>
+
+            <section class="links-section page-section" aria-labelledby="links-heading">
+              <div class="section-heading">
+                <h2 id="links-heading">Links</h2>
+              </div>
+              <div class="shortcut-grid">
+                <button class="shortcut-card" type="button" data-shortcut="cloudflareDashboard" aria-label="Open Cloudflare Dashboard">
+                  <span class="shortcut-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M6 18h11.5a3.5 3.5 0 0 0 .3-7 5.8 5.8 0 0 0-11.2-1.2A4.1 4.1 0 0 0 6 18Z"></path><path d="M9 15h9"></path></svg>
+                  </span>
+                  <span class="shortcut-name">Cloudflare</span>
+                </button>
+                <button class="shortcut-card" type="button" data-shortcut="artcraft" aria-label="Open ArtCraft">
+                  <span class="shortcut-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18h1.2a1.8 1.8 0 0 0 0-3.6h-.7a2.4 2.4 0 0 1 0-4.8H17a4 4 0 0 0 4-4A6 6 0 0 0 12 3Z"></path><circle cx="7.5" cy="10.5" r="1"></circle><circle cx="9.5" cy="7" r="1"></circle><circle cx="13.5" cy="6.5" r="1"></circle></svg>
+                  </span>
+                  <span class="shortcut-name">ArtCraft</span>
+                </button>
+                <button class="shortcut-card" type="button" data-shortcut="supabase" aria-label="Open Supabase">
+                  <span class="shortcut-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path class="icon-fill" d="M13.2 2.5 4.5 13.8h6.1L9.8 21.5l8.7-11.3h-6.1l.8-7.7Z"></path></svg>
+                  </span>
+                  <span class="shortcut-name">Supabase</span>
+                </button>
+                <button class="shortcut-card" type="button" data-shortcut="fritzbox" aria-label="Open FritzBox">
+                  <span class="shortcut-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="12" width="18" height="7" rx="2"></rect><path d="M7 15.5h2"></path><circle cx="17" cy="15.5" r="1"></circle><path d="M12 12V8"></path><path d="M8 8a5.7 5.7 0 0 1 8 0"></path></svg>
+                  </span>
+                  <span class="shortcut-name">FritzBox</span>
+                </button>
+                <button class="shortcut-card" type="button" data-shortcut="artcraftLauncher" aria-label="Open ArtCraft Launcher">
+                  <span class="shortcut-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 9h18"></path><path d="M8 13l3 2-3 2z"></path></svg>
+                  </span>
+                  <span class="shortcut-name">ArtCraft Launcher</span>
+                </button>
+              </div>
+              <p class="shortcut-status" id="links-status" role="status" aria-live="polite"></p>
+            </section>
+
+          </main>
+        </div>
+      </section>
+    </main>
+    <script>
+      const maximizeButton = document.querySelector("#maximize");
+
+      document.querySelector("#minimize").addEventListener("click", () => {
+        window.orbitWindow.minimize();
+      });
+
+      maximizeButton.addEventListener("click", () => {
+        window.orbitWindow.toggleMaximize();
+      });
+
+      window.orbitWindow.onMaximizedChange((isMaximized) => {
+        document.querySelector("#app-window").classList.toggle("is-maximized", isMaximized);
+        maximizeButton.setAttribute("aria-label", isMaximized ? "Restore" : "Maximize");
+        maximizeButton.title = isMaximized ? "Restore" : "Maximize";
+      });
+
+      document.querySelector("#close").addEventListener("click", () => {
+        window.orbitWindow.close();
+      });
+
+      document.querySelector("#search").addEventListener("click", async () => {
+        try {
+          await window.orbitWindow.openShortcut("chrome");
+        } catch {
+          shortcutStatus.textContent = "Chrome could not be opened.";
+        }
+      });
+
+      const shortcutStatus = document.querySelector("#shortcut-status");
+      const linksStatus = document.querySelector("#links-status");
+      document.querySelectorAll("[data-shortcut]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const status = button.closest(".links-section") ? linksStatus : shortcutStatus;
+          status.textContent = "";
+          try {
+            await window.orbitWindow.openShortcut(button.dataset.shortcut);
+          } catch {
+            status.textContent = "The shortcut could not be opened. Please try again.";
+          }
+        });
+      });
+
+      const sidebarClock = document.querySelector("#sidebar-clock");
+      const weatherIcon = document.querySelector("#weather-icon");
+      const weatherTemp = document.querySelector("#weather-temp");
+      const weatherLabel = document.querySelector("#weather-label");
+
+      const WEATHER_ICONS = {
+        clear: '<circle cx="10" cy="10" r="3.5"></circle><path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M15.3 4.7l-1.4 1.4M6.1 13.9l-1.4 1.4"></path>',
+        partly: '<circle cx="7" cy="7.5" r="3"></circle><path d="M7 2.5v1M2 7.5h1M3.5 4l.7.7M10.5 4l-.7.7"></path><path d="M8.5 16h6a2.5 2.5 0 0 0 .2-5 4 4 0 0 0-7.7-.8A2.9 2.9 0 0 0 8.5 16Z"></path>',
+        cloudy: '<path d="M6 16h8a3 3 0 0 0 .3-6 5 5 0 0 0-9.6-1A3.5 3.5 0 0 0 6 16Z"></path>',
+        fog: '<path d="M5 8h10M4 11h12M5 14h10"></path>',
+        drizzle: '<path d="M6 12h8a3 3 0 0 0 .3-6 5 5 0 0 0-9.6-1A3.5 3.5 0 0 0 6 12Z"></path><path d="M7 15v1M10 15v1M13 15v1"></path>',
+        rain: '<path d="M6 11h8a3 3 0 0 0 .3-6 5 5 0 0 0-9.6-1A3.5 3.5 0 0 0 6 11Z"></path><path d="M7 14l-1 3M10.5 14l-1 3M14 14l-1 3"></path>',
+        snow: '<path d="M6 11h8a3 3 0 0 0 .3-6 5 5 0 0 0-9.6-1A3.5 3.5 0 0 0 6 11Z"></path><path d="M7 14.5v2M7 16.5h.01M11 14.5v2M11 16.5h.01M15 14.5v2M15 16.5h.01"></path>',
+        storm: '<path d="M6 11h8a3 3 0 0 0 .3-6 5 5 0 0 0-9.6-1A3.5 3.5 0 0 0 6 11Z"></path><path d="m10 12-2 4h3l-1 3"></path>'
+      };
+
+      function describeWeather(code) {
+        if (code === 0) return { icon: "clear", label: "Clear" };
+        if (code === 1) return { icon: "partly", label: "Mainly clear" };
+        if (code === 2) return { icon: "partly", label: "Partly cloudy" };
+        if (code === 3) return { icon: "cloudy", label: "Overcast" };
+        if (code === 45 || code === 48) return { icon: "fog", label: "Fog" };
+        if (code >= 51 && code <= 57) return { icon: "drizzle", label: "Drizzle" };
+        if (code >= 61 && code <= 67) return { icon: "rain", label: "Rain" };
+        if (code >= 71 && code <= 77) return { icon: "snow", label: "Snow" };
+        if (code >= 80 && code <= 82) return { icon: "rain", label: "Rain showers" };
+        if (code === 85 || code === 86) return { icon: "snow", label: "Snow showers" };
+        if (code >= 95 && code <= 99) return { icon: "storm", label: "Thunderstorm" };
+        return { icon: "cloudy", label: "Unknown" };
+      }
+
+      function updateClock() {
+        const now = new Date();
+        sidebarClock.textContent = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+        sidebarClock.dateTime = now.toISOString();
+      }
+
+      async function loadWeather() {
+        try {
+          const weather = await window.orbitWindow.weather.get();
+          const condition = describeWeather(weather.weatherCode);
+          weatherIcon.innerHTML = WEATHER_ICONS[condition.icon];
+          weatherTemp.textContent = `${weather.temperature}°C`;
+          weatherLabel.textContent = condition.label;
+        } catch {
+          weatherIcon.innerHTML = "";
+          weatherTemp.textContent = "—";
+          weatherLabel.textContent = "Unavailable";
+        }
+      }
+
+      updateClock();
+      setInterval(updateClock, 1000);
+      loadWeather();
+      setInterval(loadWeather, 15 * 60 * 1000);
+
+      const sentryMessage = document.querySelector("#sentry-message");
+      const sentryForm = document.querySelector("#sentry-form");
+      const sentryErrors = document.querySelector("#sentry-errors");
+      const sentryRefresh = document.querySelector("#sentry-refresh");
+      const sentryConfigureToggle = document.querySelector("#sentry-configure-toggle");
+      const sentryToken = document.querySelector("#sentry-token");
+      const sentryClear = document.querySelector("#sentry-clear");
+      const sentryEmpty = document.querySelector("#sentry-empty");
+      const sentrySummary = document.querySelector("#sentry-summary");
+      const sentryBody = document.querySelector("#sentry-body");
+
+      function renderSentryIssues(issues) {
+        sentryErrors.replaceChildren();
+        if (issues.length === 0) {
+          return;
+        }
+
+        sentryErrors.className = "sentry-error-list";
+        for (const issue of issues) {
+          const item = document.createElement("div");
+          item.className = "sentry-error-item";
+
+          const copy = document.createElement("div");
+          copy.className = "sentry-error-copy";
+          const title = document.createElement("span");
+          title.className = "sentry-error-title";
+          title.textContent = issue.title;
+          const detail = document.createElement("span");
+          detail.className = "sentry-error-detail";
+          const lastSeen = issue.lastSeen ? new Date(issue.lastSeen).toLocaleString("en-US") : "";
+          detail.textContent = [issue.project, issue.culprit, `${issue.count} Events`, lastSeen].filter(Boolean).join(" · ");
+          copy.append(title, detail);
+
+          const meta = document.createElement("span");
+          meta.className = "sentry-error-meta";
+          const level = document.createElement("span");
+          level.className = "sentry-error-level";
+          level.textContent = issue.level;
+          if (issue.level === "error" || issue.level === "fatal") level.classList.add("sentry-error");
+          const state = document.createElement("span");
+          state.className = "sentry-error-state";
+          state.textContent = issue.status;
+          meta.append(level, state);
+
+          item.append(copy, meta);
+          sentryErrors.append(item);
+        }
+      }
+
+      async function loadSentryIssues() {
+        sentryRefresh.disabled = true;
+        sentryEmpty.hidden = true;
+        sentryMessage.hidden = false;
+        sentryMessage.classList.remove("sentry-error");
+        sentryMessage.textContent = "Loading Sentry errors…";
+        sentryErrors.replaceChildren();
+        try {
+          const result = await window.orbitWindow.sentry.getIssues();
+          renderSentryIssues(result.issues);
+          sentrySummary.textContent = `${result.projectCount} PROJECTS · ${result.issues.length} ISSUES`;
+          if (result.issues.length === 0) {
+            sentryMessage.hidden = true;
+            sentryEmpty.hidden = false;
+          } else {
+            sentryMessage.hidden = true;
+          }
+        } catch (error) {
+          sentryEmpty.hidden = true;
+          sentryMessage.textContent = error.message || "Sentry errors could not be loaded.";
+          sentryMessage.classList.add("sentry-error");
+        } finally {
+          sentryRefresh.disabled = false;
+        }
+      }
+
+      async function updateSentryStatus() {
+        try {
+          const status = await window.orbitWindow.sentry.getStatus();
+          sentryConfigureToggle.setAttribute("aria-label", status.configured ? "Sentry settings" : "Connect Sentry");
+          sentryConfigureToggle.title = status.configured ? "Sentry settings" : "Connect Sentry";
+          sentryRefresh.hidden = !status.configured;
+          if (status.configured) {
+            document.querySelector("#sentry-organization").value = status.organization;
+            document.querySelector("#sentry-project").value = status.project;
+            if (status.source === "env") {
+              sentryConfigureToggle.disabled = true;
+              sentryConfigureToggle.setAttribute("aria-label", "Sentry connected via .env");
+              sentryConfigureToggle.title = "Sentry connected via .env";
+            } else {
+              sentryConfigureToggle.disabled = false;
+            }
+            sentryForm.hidden = true;
+            await loadSentryIssues();
+            if (status.source === "env") {
+              sentryMessage.textContent += " · Signed in automatically";
+            }
+          } else {
+            sentryConfigureToggle.disabled = false;
+          }
+        } catch (error) {
+          sentryMessage.textContent = error.message || "Sentry configuration could not be read.";
+          sentryMessage.classList.add("sentry-error");
+        }
+      }
+
+      sentryConfigureToggle.addEventListener("click", async () => {
+        if (sentryConfigureToggle.disabled) return;
+        const isOpen = !sentryForm.hidden;
+        if (isOpen) {
+          sentryForm.hidden = true;
+          return;
+        }
+
+        sentryForm.hidden = false;
+        sentryToken.required = true;
+        if (sentryConfigureToggle.title === "Sentry settings") {
+          sentryToken.required = false;
+          sentryToken.placeholder = "Leave blank to keep the stored token";
+          sentryClear.hidden = false;
+        } else {
+          sentryToken.placeholder = "Token is encrypted and stored locally";
+          sentryClear.hidden = true;
+        }
+      });
+
+      sentryClear.addEventListener("click", async () => {
+        sentryClear.disabled = true;
+        try {
+          await window.orbitWindow.sentry.clear();
+          sentryErrors.replaceChildren();
+          sentryMessage.textContent = "Sentry has been disconnected.";
+          sentryMessage.classList.remove("sentry-error");
+          sentryConfigureToggle.setAttribute("aria-label", "Connect Sentry");
+          sentryConfigureToggle.title = "Connect Sentry";
+          sentryConfigureToggle.disabled = false;
+          sentryRefresh.hidden = true;
+          sentryClear.hidden = true;
+          sentryForm.hidden = true;
+          sentryToken.value = "";
+          sentryToken.required = true;
+        } catch (error) {
+          sentryMessage.textContent = error.message || "Sentry could not be disconnected.";
+          sentryMessage.classList.add("sentry-error");
+        } finally {
+          sentryClear.disabled = false;
+        }
+      });
+
+      sentryRefresh.addEventListener("click", loadSentryIssues);
+
+      sentryForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const formData = new FormData(sentryForm);
+        const config = {
+          organization: String(formData.get("organization") || ""),
+          project: String(formData.get("project") || ""),
+          token: String(formData.get("token") || "")
+        };
+
+        const saveButton = document.querySelector("#sentry-save");
+        saveButton.disabled = true;
+        sentryMessage.classList.remove("sentry-error");
+        sentryMessage.textContent = "Checking Sentry connection…";
+        try {
+          const result = await window.orbitWindow.sentry.configure(config);
+          sentryToken.value = "";
+          sentryForm.hidden = true;
+          sentryConfigureToggle.disabled = result.source === "env";
+          sentryConfigureToggle.setAttribute(
+            "aria-label",
+            result.source === "env" ? "Sentry connected via .env" : "Sentry settings"
+          );
+          sentryConfigureToggle.title = result.source === "env" ? "Sentry connected via .env" : "Sentry settings";
+          sentryRefresh.hidden = false;
+          if (result.source === "env") {
+            document.querySelector("#sentry-organization").value = result.organization;
+            document.querySelector("#sentry-project").value = result.project;
+          }
+          await loadSentryIssues();
+          if (result.source === "env") {
+              sentryMessage.textContent += " · Signed in automatically";
+          }
+        } catch (error) {
+          sentryMessage.textContent = error.message || "Sentry could not be connected.";
+          sentryMessage.classList.add("sentry-error");
+        } finally {
+          saveButton.disabled = false;
+        }
+      });
+
+      const todoForm = document.querySelector("#todo-form");
+      const todoInput = document.querySelector("#todo-input");
+      const todoAdd = document.querySelector("#todo-add");
+      const todoList = document.querySelector("#todo-list");
+      const todoEmpty = document.querySelector("#todo-empty");
+      const todoStatus = document.querySelector("#todo-status");
+      const todoSummary = document.querySelector("#todo-summary");
+      const todoRefresh = document.querySelector("#todo-refresh");
+
+      function setTodoStatus(message, isError = false) {
+        todoStatus.textContent = message;
+        todoStatus.classList.toggle("is-error", isError);
+      }
+
+      function todoErrorMessage(error, fallback) {
+        const message = String(error?.message || "").replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "");
+        return message || fallback;
+      }
+
+      function renderTodos(items) {
+        todoList.replaceChildren();
+        const open = items.filter((item) => !item.completed).length;
+        const done = items.length - open;
+        todoSummary.textContent = `${open} OPEN · ${done} DONE`;
+        todoEmpty.textContent = "No tasks yet. Add your first one above.";
+        todoEmpty.hidden = items.length > 0;
+
+        for (const item of items) {
+          const row = document.createElement("div");
+          row.className = "todo-item";
+          if (item.completed) row.classList.add("is-done");
+
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.className = "todo-checkbox";
+          checkbox.checked = Boolean(item.completed);
+          checkbox.setAttribute("aria-label", item.completed ? `Mark "${item.title}" as open` : `Mark "${item.title}" as done`);
+          checkbox.addEventListener("change", async () => {
+            checkbox.disabled = true;
+            setTodoStatus("");
+            try {
+              await window.orbitWindow.todo.setCompleted(item.id, checkbox.checked);
+              await loadTodos();
+            } catch (error) {
+              checkbox.checked = !checkbox.checked;
+              setTodoStatus(todoErrorMessage(error, "Could not update the task."), true);
+            } finally {
+              checkbox.disabled = false;
+            }
+          });
+
+          const title = document.createElement("span");
+          title.className = "todo-title";
+          title.textContent = item.title;
+
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.className = "todo-delete";
+          remove.title = "Delete";
+          remove.setAttribute("aria-label", `Delete "${item.title}"`);
+          remove.innerHTML = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 6h12"></path><path d="M8 6V4.5h4V6"></path><path d="M6.5 6l.6 10h5.8l.6-10"></path><path d="M8.5 9v4.5M11.5 9v4.5"></path></svg>';
+          remove.addEventListener("click", async () => {
+            remove.disabled = true;
+            setTodoStatus("");
+            try {
+              await window.orbitWindow.todo.remove(item.id);
+              await loadTodos();
+            } catch (error) {
+              setTodoStatus(todoErrorMessage(error, "Could not delete the task."), true);
+              remove.disabled = false;
+            }
+          });
+
+          row.append(checkbox, title, remove);
+          todoList.append(row);
+        }
+      }
+
+      async function loadTodos() {
+        todoRefresh.disabled = true;
+        setTodoStatus("Loading tasks…");
+        try {
+          const items = await window.orbitWindow.todo.list();
+          renderTodos(items);
+          setTodoStatus("");
+        } catch (error) {
+          todoSummary.textContent = "— OPEN · — DONE";
+          todoEmpty.textContent = "Could not load tasks.";
+          todoEmpty.hidden = false;
+          setTodoStatus(todoErrorMessage(error, "Could not load tasks."), true);
+        } finally {
+          todoRefresh.disabled = false;
+        }
+      }
+
+      todoForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const title = todoInput.value.trim();
+        if (!title) {
+          setTodoStatus("Enter a task first.", true);
+          todoInput.focus();
+          return;
+        }
+
+        todoAdd.disabled = true;
+        setTodoStatus("Adding task…");
+        try {
+          await window.orbitWindow.todo.create(title);
+          todoInput.value = "";
+          await loadTodos();
+          todoInput.focus();
+        } catch (error) {
+          setTodoStatus(todoErrorMessage(error, "Could not add the task."), true);
+        } finally {
+          todoAdd.disabled = false;
+        }
+      });
+
+      todoRefresh.addEventListener("click", loadTodos);
+
+      const sidebarItems = document.querySelectorAll(".sidebar-item[data-page]");
+      const pageSections = document.querySelectorAll(".page-section");
+      function showPage(pageId) {
+        pageSections.forEach((section) => section.classList.remove("active"));
+        sidebarItems.forEach((item) => item.removeAttribute("aria-current"));
+        const eyebrow = document.querySelector("#page-eyebrow");
+        const title = document.querySelector("#page-title");
+        if (pageId === "todo") {
+          document.querySelector(".todo-section").classList.add("active");
+          eyebrow.textContent = "Workspace";
+          title.textContent = "To-Do";
+          loadTodos();
+        } else if (pageId === "links") {
+          document.querySelector(".links-section").classList.add("active");
+          eyebrow.textContent = "Workspace";
+          title.textContent = "Links";
+        } else {
+          document.querySelector(".shortcuts-section").classList.add("active");
+          document.querySelector(".sentry-section").classList.add("active");
+          eyebrow.textContent = "Workspace";
+          title.textContent = "Overview";
+        }
+        document.querySelector(`.sidebar-item[data-page="${pageId}"]`)?.setAttribute("aria-current", "page");
+      }
+      sidebarItems.forEach((item) => {
+        item.addEventListener("click", () => showPage(item.dataset.page));
+      });
+
+      updateSentryStatus();
+    </script>
+  </body>
+</html>

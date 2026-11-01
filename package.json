@@ -1,0 +1,35 @@
+{
+  "name": "orbit-desktop",
+  "version": "1.7.0",
+  "private": true,
+  "description": "Orbit Desktop App",
+  "author": "Max",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^45.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.orbit.desktop",
+    "productName": "Orbit",
+    "asar": true,
+    "icon": "assets/orbit.ico",
+    "files": [
+      "index.html",
+      "main.cjs",
+      "preload.cjs",
+      "package.json",
+      "assets/orbit.ico"
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "artifactName": "Orbit-Portable-${version}.${ext}"
+    }
+  }
+}
