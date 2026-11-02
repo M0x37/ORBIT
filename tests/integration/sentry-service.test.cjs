@@ -149,6 +149,29 @@ test("fetchSentryPages maps network and payload failures", async () => {
   );
 });
 
+test("fetchSentryPages explains timeouts as a possible Sentry outage", async () => {
+  for (const name of ["TimeoutError", "AbortError"]) {
+    const timeout = new Error("The operation was aborted due to timeout");
+    timeout.name = name;
+
+    await assert.rejects(
+      fetchSentryPages({
+        fetchImpl: async () => {
+          throw timeout;
+        },
+        initialUrl: INITIAL_URL,
+        token: "abcdefgh",
+        resourceName: "issues"
+      }),
+      (error) => {
+        assert.match(error.message, /did not respond in time while loading issues/);
+        assert.match(error.message, /https:\/\/status\.sentry\.io/);
+        return true;
+      }
+    );
+  }
+});
+
 test("loadSentryIssues queries issues and projects and maps the result", async () => {
   const calls = [];
   const fetchImpl = async (url) => {

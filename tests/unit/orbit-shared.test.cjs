@@ -111,6 +111,91 @@ test("parseWeatherPayload validates and rounds", () => {
   );
 });
 
+test("parseEnvFile reads only the requested keys", () => {
+  const text = [
+    "# comment",
+    "GITHUB_TOKEN=ghp_abcdefgh",
+    "SENTRY_ORG=my-org",
+    "IGNORED=value"
+  ].join("\n");
+  assert.deepEqual(shared.parseEnvFile(text, ["GITHUB_TOKEN"]), { GITHUB_TOKEN: "ghp_abcdefgh" });
+  assert.deepEqual(shared.parseEnvFile("IGNORED=x", ["GITHUB_TOKEN"]), {});
+});
+
+test("validateGithubToken trims and rejects invalid tokens", () => {
+  assert.equal(shared.validateGithubToken("  ghp_abcdefgh  "), "ghp_abcdefgh");
+  assert.throws(() => shared.validateGithubToken(""), /GitHub token/);
+  assert.throws(() => shared.validateGithubToken("short"), /GitHub token/);
+  assert.throws(() => shared.validateGithubToken("ghp_abc defgh"), /GitHub token/);
+  assert.throws(() => shared.validateGithubToken("a".repeat(257)), /GitHub token/);
+});
+
+test("githubNotificationUrl builds GitHub links for known subject types", () => {
+  const base = { repository: { full_name: "octo/repo" } };
+  assert.equal(
+    shared.githubNotificationUrl({ ...base, subject: { type: "Issue", url: "https://api.github.com/repos/octo/repo/issues/42" } }),
+    "https://github.com/octo/repo/issues/42"
+  );
+  assert.equal(
+    shared.githubNotificationUrl({ ...base, subject: { type: "PullRequest", url: "https://api.github.com/repos/octo/repo/pulls/7" } }),
+    "https://github.com/octo/repo/issues/7"
+  );
+  assert.equal(
+    shared.githubNotificationUrl({ ...base, subject: { type: "Discussion", url: "https://api.github.com/repos/octo/repo/discussions/5" } }),
+    "https://github.com/octo/repo/discussions/5"
+  );
+  assert.equal(
+    shared.githubNotificationUrl({ ...base, subject: { type: "Commit", url: "https://api.github.com/repos/octo/repo/commits/abc123" } }),
+    "https://github.com/octo/repo/commit/abc123"
+  );
+  assert.equal(
+    shared.githubNotificationUrl({ ...base, subject: { type: "Release", url: "https://api.github.com/repos/octo/repo/releases/9" } }),
+    "https://github.com/octo/repo/releases"
+  );
+  assert.equal(
+    shared.githubNotificationUrl({ ...base, subject: { type: "CheckSuite", url: "https://api.github.com/repos/octo/repo/check-suites/1" } }),
+    "https://github.com/notifications"
+  );
+  assert.equal(shared.githubNotificationUrl({}), "https://github.com/notifications");
+});
+
+test("mapGithubNotification maps fields and fills defaults", () => {
+  assert.deepEqual(shared.mapGithubNotification({}), {
+    id: "",
+    title: "Untitled notification",
+    repository: "Unknown repository",
+    reason: "",
+    type: "",
+    updatedAt: "",
+    url: "https://github.com/notifications"
+  });
+
+  const mapped = shared.mapGithubNotification({
+    id: 12,
+    reason: "review_requested",
+    updated_at: "2026-11-02T10:00:00Z",
+    subject: { title: "Fix login", type: "PullRequest", url: "https://api.github.com/repos/octo/repo/pulls/7" },
+    repository: { full_name: "octo/repo" }
+  });
+  assert.equal(mapped.id, "12");
+  assert.equal(mapped.title, "Fix login");
+  assert.equal(mapped.repository, "octo/repo");
+  assert.equal(mapped.reason, "review_requested");
+  assert.equal(mapped.type, "PullRequest");
+  assert.equal(mapped.updatedAt, "2026-11-02T10:00:00Z");
+  assert.equal(mapped.url, "https://github.com/octo/repo/issues/7");
+});
+
+test("formatRelativeTime renders coarse relative times", () => {
+  const now = new Date("2026-11-02T12:00:00Z");
+  assert.equal(shared.formatRelativeTime("2026-11-02T11:59:40Z", now), "just now");
+  assert.equal(shared.formatRelativeTime("2026-11-02T11:55:00Z", now), "5m ago");
+  assert.equal(shared.formatRelativeTime("2026-11-02T10:00:00Z", now), "2h ago");
+  assert.equal(shared.formatRelativeTime("2026-10-30T12:00:00Z", now), "3d ago");
+  assert.equal(shared.formatRelativeTime("not-a-date", now), "");
+  assert.equal(shared.formatRelativeTime(null, now), "");
+});
+
 test("parseSentryEnvFile parses the supported formats", () => {
   const values = shared.parseSentryEnvFile(
     [

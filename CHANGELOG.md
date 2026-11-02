@@ -1,4 +1,15 @@
 # Changelog - Orbit Desktop App
+## [1.9.1] - 2026-11-02
+
+### Fixed
+- Sentry timeouts now report that Sentry may be experiencing an outage and link to its status page instead of blaming the internet connection
+
+## [1.9.0] - 2026-11-02
+
+### Added
+- Inbox page listing unread GitHub notifications, opened via `GITHUB_TOKEN` in `.env`
+- Clicking a notification opens it on GitHub
+
 ## [1.8.0] - 2026-11-01
 
 ### Added
@@ -220,3 +231,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI runs E2E on Windows only; Linux/macOS packaging is not configured
 - Release requires pushing a tag that matches the `package.json` version
 - `npm audit` reports moderate vulnerabilities in the Electron build toolchain
+
+---
+
+## Session Notes 2026-11-02 (Sentry timeout message)
+
+**Work request**: Clarify the Sentry error shown while the Sentry API is down
+
+**Steps taken**:
+1. Investigated the failing Sentry load: organization-scoped Sentry endpoints timed out while the status page reported an API outage
+2. Added a distinct timeout message that points to `https://status.sentry.io`
+3. Added an integration test covering `TimeoutError` and `AbortError`
+4. Bumped version 1.9.0 → 1.9.1 and rebuilt the portable EXE
+
+**Open topics / Known issues**:
+- The timeout message does not retry automatically; use the Refresh button after Sentry recovers

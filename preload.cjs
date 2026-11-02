@@ -14,6 +14,10 @@ contextBridge.exposeInMainWorld("orbitWindow", {
   weather: {
     get: () => ipcRenderer.invoke("weather:current")
   },
+  github: {
+    getNotifications: () => ipcRenderer.invoke("github:notifications"),
+    open: (url) => ipcRenderer.invoke("github:open", url)
+  },
   sentry: {
     getStatus: () => ipcRenderer.invoke("sentry:status"),
     configure: (config) => ipcRenderer.invoke("sentry:configure", config),

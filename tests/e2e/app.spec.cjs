@@ -24,6 +24,24 @@ async function readJson(request) {
 function createStubServer() {
   let todos = [];
   let nextId = 1;
+  const state = {
+    notifications: [
+      {
+        id: "1",
+        reason: "review_requested",
+        updated_at: "2026-11-02T10:00:00Z",
+        subject: { title: "Fix login", type: "PullRequest", url: "https://api.github.com/repos/octo/repo/pulls/7" },
+        repository: { full_name: "octo/repo" }
+      },
+      {
+        id: "2",
+        reason: "mention",
+        updated_at: "2026-11-02T09:00:00Z",
+        subject: { title: "Deploy notes", type: "Issue", url: "https://api.github.com/repos/octo/repo/issues/42" },
+        repository: { full_name: "octo/repo" }
+      }
+    ]
+  };
 
   const server = http.createServer((request, response) => {
     void (async () => {
@@ -31,6 +49,11 @@ function createStubServer() {
 
       if (url.pathname === "/forecast") {
         sendJson(response, 200, { current: { temperature_2m: 7.4, weather_code: 2 } });
+        return;
+      }
+
+      if (url.pathname === "/notifications") {
+        sendJson(response, 200, state.notifications);
         return;
       }
 
@@ -79,6 +102,7 @@ function createStubServer() {
     })();
   });
 
+  server.state = state;
   return server;
 }
 
@@ -101,7 +125,9 @@ test.beforeEach(async () => {
       ORBIT_NO_ENV: "1",
       ORBIT_TEST_USER_DATA: userDataDir,
       ORBIT_WEATHER_BASE_URL: `http://127.0.0.1:${port}/forecast`,
-      ORBIT_TODO_BASE_URL: `http://127.0.0.1:${port}`
+      ORBIT_TODO_BASE_URL: `http://127.0.0.1:${port}`,
+      ORBIT_GITHUB_BASE_URL: `http://127.0.0.1:${port}`,
+      ORBIT_GITHUB_TOKEN: "ghp_e2e_token"
     }
   });
 
@@ -155,6 +181,38 @@ test("navigates between Overview, To-Do, and Links", async () => {
   await expect(page.locator(".sentry-section")).toHaveClass(/active/);
 });
 
+test("navigates to Inbox and renders unread notifications", async () => {
+  server.state.notifications = [
+    {
+      id: "1",
+      reason: "review_requested",
+      updated_at: "2026-11-02T10:00:00Z",
+      subject: { title: "Fix login", type: "PullRequest", url: "https://api.github.com/repos/octo/repo/pulls/7" },
+      repository: { full_name: "octo/repo" }
+    },
+    {
+      id: "2",
+      reason: "mention",
+      updated_at: "2026-11-02T09:00:00Z",
+      subject: { title: "Deploy notes", type: "Issue", url: "https://api.github.com/repos/octo/repo/issues/42" },
+      repository: { full_name: "octo/repo" }
+    }
+  ];
+  await page.locator('[data-page="inbox"]').click();
+  await expect(page.locator("#page-title")).toHaveText("Inbox");
+  await expect(page.locator(".inbox-section")).toHaveClass(/active/);
+  await expect(page.locator(".inbox-item")).toHaveCount(2);
+  await expect(page.locator("#inbox-summary")).toHaveText("2 UNREAD");
+  await expect(page.locator(".inbox-item").first()).toContainText("octo/repo");
+});
+
+test("shows the inbox-zero state", async () => {
+  server.state.notifications = [];
+  await page.locator('[data-page="inbox"]').click();
+  await expect(page.locator("#inbox-empty")).toBeVisible();
+  await expect(page.locator("#inbox-summary")).toHaveText("0 UNREAD");
+});
+
 test("adds, completes, and deletes a To-Do through the real IPC layer", async () => {
   await page.locator('[data-page="todo"]').click();
   await expect(page.locator("#page-title")).toHaveText("To-Do");
@@ -178,11 +236,23 @@ test("adds, completes, and deletes a To-Do through the real IPC layer", async ()
 });
 
 test("fits the minimum window size without scrolling", async () => {
+  server.state.notifications = [
+    {
+      id: "1",
+      reason: "review_requested",
+      updated_at: "2026-11-02T10:00:00Z",
+      subject: { title: "Fix login", type: "PullRequest", url: "https://api.github.com/repos/octo/repo/pulls/7" },
+      repository: { full_name: "octo/repo" }
+    }
+  ];
   const windowHandle = await electronApp.browserWindow(page);
   await windowHandle.evaluate((window) => window.setSize(360, 560));
   await page.waitForTimeout(500);
 
   await expect(page.locator(".sidebar-widget")).toBeVisible();
+
+  await page.locator('[data-page="inbox"]').click();
+  await expect(page.locator(".inbox-item")).toHaveCount(1);
 
   const overflow = await page.evaluate(() => {
     const root = document.querySelector(".window");

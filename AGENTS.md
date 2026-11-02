@@ -27,7 +27,8 @@ Orbit Desktop: a single-window Electron dashboard shipped as a portable Windows 
 - Page switching is manual in `showPage()`: the overview page activates `.shortcuts-section` and `.sentry-section`; To-Do activates `.todo-section`; links activates `.links-section`. New pages must be registered there and use the `.page-section` convention.
 - To-Do uses the Supabase project at `https://yklavrwnlzizftzytehf.supabase.co` and the existing `public.todos` table (`id`, `title`, `completed`, `created_at`). The publishable key is safe to ship; use main-process REST calls through `todo:*`, never renderer Node access.
 - Closing the window hides Orbit to the system tray; use `Quit Orbit` in the tray menu to exit. `Alt+A` toggles the window, and the app enforces a single instance. Autostart is intentionally not implemented.
-- Test hooks (production-safe, env-only): `ORBIT_TEST_USER_DATA` isolates `userData`, `ORBIT_E2E=1` skips tray/hotkey, `ORBIT_NO_ENV=1` ignores `.env`, `ORBIT_WEATHER_BASE_URL` / `ORBIT_TODO_BASE_URL` point at local stubs. Never let tests hit real Supabase/Sentry/Open-Meteo.
+- GitHub Inbox reads `GITHUB_TOKEN` from the same `.env` (dev: repo root; packaged: next to the EXE). The token is read-only and never stored by the app; opening a notification is restricted to `https://github.com`.
+- Test hooks (production-safe, env-only): `ORBIT_TEST_USER_DATA` isolates `userData`, `ORBIT_E2E=1` skips tray/hotkey, `ORBIT_NO_ENV=1` ignores `.env`, `ORBIT_WEATHER_BASE_URL` / `ORBIT_TODO_BASE_URL` / `ORBIT_GITHUB_BASE_URL` point at local stubs, `ORBIT_GITHUB_TOKEN` injects a test token. Never let tests hit real Supabase/Sentry/Open-Meteo/GitHub.
 - Version bumps are expected for fixes: update `package.json` `version` and add a changelog entry before rebuilding (see `agent/rules.md`). Releases are tags `v<version>` that must match `package.json`; CI fails otherwise.
 
 ## Changelog

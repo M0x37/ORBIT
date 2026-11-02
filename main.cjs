@@ -1,10 +1,17 @@
 const { app, BrowserWindow, globalShortcut, ipcMain, Menu, safeStorage, shell, Tray } = require("electron");
 const fs = require("node:fs/promises");
 const path = require("node:path");
-const { parseSentryEnvFile, validateSentrySetup } = require("./lib/orbit-shared.js");
+const {
+  mapGithubNotification,
+  parseEnvFile,
+  parseSentryEnvFile,
+  validateGithubToken,
+  validateSentrySetup
+} = require("./lib/orbit-shared.js");
 const { fetchWeather } = require("./lib/weather-service.cjs");
 const { todoRequest: sendTodoRequest } = require("./lib/todo-service.cjs");
 const { loadSentryIssues } = require("./lib/sentry-service.cjs");
+const { fetchNotifications } = require("./lib/github-service.cjs");
 
 if (process.env.ORBIT_TEST_USER_DATA) {
   app.setPath("userData", path.resolve(process.env.ORBIT_TEST_USER_DATA));
@@ -13,7 +20,7 @@ if (process.env.ORBIT_TEST_USER_DATA) {
 const E2E_MODE = process.env.ORBIT_E2E === "1";
 
 const sentryConfigPath = () => path.join(app.getPath("userData"), "sentry-config.json");
-const sentryEnvPaths = () => {
+const envPaths = () => {
   if (!app.isPackaged) return [path.join(__dirname, ".env")];
 
   const portableDirectory = process.env.PORTABLE_EXECUTABLE_DIR;
@@ -66,7 +73,7 @@ async function readSentryEnvConfig() {
   if (process.env.ORBIT_NO_ENV === "1") return null;
 
   let foundPartialConfig = false;
-  for (const envPath of sentryEnvPaths()) {
+  for (const envPath of envPaths()) {
     let file;
     try {
       file = (await fs.readFile(envPath, "utf8")).replace(/^\uFEFF/, "");
@@ -100,6 +107,25 @@ async function readSentryEnvConfig() {
 
   if (foundPartialConfig) {
     throw new Error("Please set SENTRY_ORG, SENTRY_PROJECT, and SENTRY_AUTH_TOKEN in the .env file.");
+  }
+  return null;
+}
+
+async function readGithubToken() {
+  if (process.env.ORBIT_GITHUB_TOKEN) return validateGithubToken(process.env.ORBIT_GITHUB_TOKEN);
+  if (process.env.ORBIT_NO_ENV === "1") return null;
+
+  for (const envPath of envPaths()) {
+    let file;
+    try {
+      file = (await fs.readFile(envPath, "utf8")).replace(/^\uFEFF/, "");
+    } catch (error) {
+      if (error.code === "ENOENT") continue;
+      throw new Error("The .env file could not be read.");
+    }
+
+    const values = parseEnvFile(file, ["GITHUB_TOKEN"]);
+    if (values.GITHUB_TOKEN) return validateGithubToken(values.GITHUB_TOKEN);
   }
   return null;
 }
@@ -301,6 +327,28 @@ ipcMain.handle("todo:delete", async (_event, id) => {
 ipcMain.handle("weather:current", () =>
   fetchWeather(process.env.ORBIT_WEATHER_BASE_URL ? { baseUrl: process.env.ORBIT_WEATHER_BASE_URL } : {})
 );
+
+ipcMain.handle("github:notifications", async () => {
+  const token = await readGithubToken();
+  if (!token) return { configured: false, notifications: [] };
+
+  const baseUrl = process.env.ORBIT_GITHUB_BASE_URL || undefined;
+  const notifications = await fetchNotifications(baseUrl ? { token, baseUrl } : { token });
+  return { configured: true, notifications: notifications.map(mapGithubNotification) };
+});
+
+ipcMain.handle("github:open", async (_event, target) => {
+  let url;
+  try {
+    url = new URL(target);
+  } catch {
+    throw new Error("This link cannot be opened.");
+  }
+  if (url.protocol !== "https:" || url.origin !== "https://github.com") {
+    throw new Error("This link cannot be opened.");
+  }
+  await shell.openExternal(url.href);
+});
 
 ipcMain.handle("sentry:status", async () => {
   const envConfig = await readSentryEnvConfig();
