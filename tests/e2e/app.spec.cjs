@@ -47,6 +47,11 @@ function createStubServer() {
     void (async () => {
       const url = new URL(request.url, "http://127.0.0.1");
 
+      if (url.pathname === "/public-ip") {
+        sendJson(response, 200, { ip: "203.0.113.42" });
+        return;
+      }
+
       if (url.pathname === "/forecast") {
         sendJson(response, 200, { current: { temperature_2m: 7.4, weather_code: 2 } });
         return;
@@ -127,6 +132,9 @@ test.beforeEach(async () => {
       ORBIT_WEATHER_BASE_URL: `http://127.0.0.1:${port}/forecast`,
       ORBIT_TODO_BASE_URL: `http://127.0.0.1:${port}`,
       ORBIT_GITHUB_BASE_URL: `http://127.0.0.1:${port}`,
+      ORBIT_NETWORK_PROBE_HOST: "127.0.0.1",
+      ORBIT_NETWORK_PROBE_PORT: String(port),
+      ORBIT_PUBLIC_IP_URL: `http://127.0.0.1:${port}/public-ip`,
       ORBIT_GITHUB_TOKEN: "ghp_e2e_token"
     }
   });
@@ -164,7 +172,7 @@ test("shows a ticking clock and the stubbed weather", async () => {
   expect(clock.text).toBe(clock.expected);
 });
 
-test("navigates between Overview, To-Do, and Links", async () => {
+test("navigates between Overview, To-Do, Links, Network, and Quick Actions", async () => {
   await page.locator('[data-page="todo"]').click();
   await expect(page.locator("#page-title")).toHaveText("To-Do");
   await expect(page.locator(".todo-section")).toHaveClass(/active/);
@@ -175,10 +183,25 @@ test("navigates between Overview, To-Do, and Links", async () => {
   await expect(page.locator(".links-section")).toHaveClass(/active/);
   await expect(page.locator(".todo-section")).not.toHaveClass(/active/);
 
+  await page.locator('[data-page="network"]').click();
+  await expect(page.locator("#page-title")).toHaveText("Network");
+  await expect(page.locator(".network-section")).toHaveClass(/active/);
+  await expect(page.locator("#network-connection")).toHaveText("Online");
+  await expect(page.locator("#network-ip")).toHaveText("127.0.0.1");
+  await expect(page.locator("#network-adapter")).not.toHaveText("—");
+  await expect(page.locator("#network-mac")).not.toHaveText("—");
+  await expect(page.locator("#network-dns")).not.toHaveText("—");
+  await expect(page.locator("#network-public-ip")).toHaveText("203.0.113.42");
+
   await page.locator('[data-page="overview"]').click();
   await expect(page.locator("#page-title")).toHaveText("Overview");
   await expect(page.locator(".shortcuts-section")).toHaveClass(/active/);
   await expect(page.locator(".sentry-section")).toHaveClass(/active/);
+
+  await expect(page.locator('.sidebar-item[data-page="quick-actions"]')).toHaveCount(0);
+  await page.locator('.control-settings[data-page="quick-actions"]').click();
+  await expect(page.locator("#page-title")).toHaveText("Quick Actions");
+  await expect(page.locator(".quick-actions-section")).toHaveClass(/active/);
 });
 
 test("navigates to Inbox and renders unread notifications", async () => {

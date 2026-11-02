@@ -14,9 +14,18 @@ contextBridge.exposeInMainWorld("orbitWindow", {
   weather: {
     get: () => ipcRenderer.invoke("weather:current")
   },
+  network: {
+    getOverview: () => ipcRenderer.invoke("network:overview")
+  },
   github: {
     getNotifications: () => ipcRenderer.invoke("github:notifications"),
     open: (url) => ipcRenderer.invoke("github:open", url)
+  },
+  quickActions: {
+    getOutputDevices: () => ipcRenderer.invoke("audio:list-output-devices"),
+    getOutputPair: () => ipcRenderer.invoke("audio:get-output-pair"),
+    saveOutputPair: (pair) => ipcRenderer.invoke("audio:save-output-pair", pair),
+    toggleOutput: () => ipcRenderer.invoke("audio:toggle-output"),
   },
   sentry: {
     getStatus: () => ipcRenderer.invoke("sentry:status"),
