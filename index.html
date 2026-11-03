@@ -315,53 +315,94 @@
         margin-top: 26px;
       }
 
-      .network-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12px;
-      }
-
-      .network-card {
-        display: grid;
+      .network-console {
+        overflow: hidden;
         min-width: 0;
-        min-height: 104px;
-        align-content: space-between;
-        gap: 15px;
-        padding: 14px;
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
         background: linear-gradient(145deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018));
       }
 
-      .network-card-topline {
+      .network-console-head {
         display: flex;
         align-items: center;
-        gap: 8px;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.075);
       }
 
-      .network-card-icon {
-        display: grid;
-        width: 25px;
-        height: 25px;
-        flex: 0 0 25px;
-        place-items: center;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 7px;
+      .network-console-state {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 9px;
+      }
+
+      .network-console-dot {
+        width: 7px;
+        height: 7px;
+        flex: 0 0 7px;
+        border-radius: 50%;
+        background: #777981;
+        box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.035);
+      }
+
+      .network-console.is-online .network-console-dot {
+        background: #8fd39a;
+        box-shadow: 0 0 0 4px rgba(143, 211, 154, 0.1);
+      }
+
+      .network-console.is-offline .network-console-dot {
+        background: #e1a0a0;
+        box-shadow: 0 0 0 4px rgba(225, 160, 160, 0.1);
+      }
+
+      .network-console-connection {
+        overflow: hidden;
+        color: #d8d9dd;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.09em;
+        text-overflow: ellipsis;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .network-console.is-online .network-console-connection {
+        color: #a7d6b1;
+      }
+
+      .network-console.is-offline .network-console-connection {
+        color: #e1a0a0;
+      }
+
+      .network-console-latency {
+        flex: 0 0 auto;
         color: #aeb0b7;
-        background: rgba(255, 255, 255, 0.035);
+        font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
       }
 
-      .network-card-icon svg {
-        width: 14px;
-        height: 14px;
-        fill: none;
-        stroke: currentColor;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        stroke-width: 1.4;
+      .network-console-body {
+        display: grid;
       }
 
-      .network-card-label {
+      .network-console-row {
+        display: grid;
+        grid-template-columns: minmax(78px, 0.36fr) minmax(0, 1fr);
+        align-items: center;
+        gap: 14px;
+        min-width: 0;
+        padding: 8px 14px;
+      }
+
+      .network-console-row + .network-console-row {
+        border-top: 1px solid rgba(255, 255, 255, 0.055);
+      }
+
+      .network-console-label {
         color: #85878f;
         font-size: 10px;
         font-weight: 600;
@@ -369,36 +410,15 @@
         text-transform: uppercase;
       }
 
-      .network-card-value {
+      .network-console-value {
         overflow: hidden;
         min-width: 0;
         color: #e3e4e8;
-        font-size: 13px;
-        font-weight: 600;
+        font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+        font-size: 11px;
+        text-align: right;
         text-overflow: ellipsis;
         white-space: nowrap;
-      }
-
-      .network-card-detail {
-        overflow: hidden;
-        margin-top: 5px;
-        color: #777981;
-        font-size: 9px;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .network-card-value.is-multiline {
-        overflow-wrap: anywhere;
-        white-space: normal;
-      }
-
-      .network-card-value.is-online {
-        color: #a7d6b1;
-      }
-
-      .network-card-value.is-offline {
-        color: #e1a0a0;
       }
 
       .network-status {
@@ -1297,10 +1317,6 @@
           grid-template-columns: 1fr;
         }
 
-        .network-grid {
-          grid-template-columns: 1fr;
-        }
-
         @media (max-height: 620px) {
           .desktop {
             padding-top: 10px;
@@ -1369,6 +1385,23 @@
         .todo-panel-header {
           padding-right: 10px;
           padding-left: 10px;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .network-console-row {
+          grid-template-columns: 62px minmax(0, 1fr);
+          gap: 6px;
+          padding: 8px;
+        }
+
+        .network-console-label {
+          font-size: 9px;
+          letter-spacing: 0.05em;
+        }
+
+        .network-console-value {
+          font-size: 10px;
         }
       }
 
@@ -1687,77 +1720,40 @@
                 </button>
               </div>
               <p class="audio-device-setup-description">Local details stay on this device. Public IP lookup sends a request to ipify.org.</p>
-              <div class="network-grid" aria-live="polite">
-                <article class="network-card">
-                  <div class="network-card-topline">
-                    <span class="network-card-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M2.5 7.5a11 11 0 0 1 15 0"></path><path d="M5.5 10.5a6.6 6.6 0 0 1 9 0"></path><path d="M8.5 13.5a2.2 2.2 0 0 1 3 0"></path><circle cx="10" cy="16.5" r=".7"></circle></svg></span>
-                    <span class="network-card-label">Internet</span>
+              <div class="network-console" aria-live="polite">
+                <div class="network-console-head">
+                  <span class="network-console-state">
+                    <span class="network-console-dot" aria-hidden="true"></span>
+                    <span class="network-console-connection" id="network-connection">Checking…</span>
+                  </span>
+                  <span class="network-console-latency" id="network-latency">—</span>
+                </div>
+                <div class="network-console-body">
+                  <div class="network-console-row">
+                    <span class="network-console-label">Adapter</span>
+                    <span class="network-console-value" id="network-adapter">—</span>
                   </div>
-                  <div>
-                    <div class="network-card-value" id="network-connection">Checking…</div>
-                    <div class="network-card-detail" id="network-connection-detail">Checking external reachability</div>
+                  <div class="network-console-row">
+                    <span class="network-console-label">Local IPv4</span>
+                    <span class="network-console-value" id="network-ip">—</span>
                   </div>
-                </article>
-                <article class="network-card">
-                  <div class="network-card-topline">
-                    <span class="network-card-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7"></circle><path d="M10 6v4l2.5 1.5"></path></svg></span>
-                    <span class="network-card-label">Response time</span>
+                  <div class="network-console-row">
+                    <span class="network-console-label">IPv6</span>
+                    <span class="network-console-value" id="network-ipv6">—</span>
                   </div>
-                  <div>
-                    <div class="network-card-value" id="network-latency">—</div>
-                    <div class="network-card-detail">TCP connection check</div>
+                  <div class="network-console-row">
+                    <span class="network-console-label">MAC address</span>
+                    <span class="network-console-value" id="network-mac">—</span>
                   </div>
-                </article>
-                <article class="network-card">
-                  <div class="network-card-topline">
-                    <span class="network-card-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><rect x="3" y="4" width="14" height="12" rx="2"></rect><path d="M6 8h8M6 11h3M6 14h.01"></path></svg></span>
-                    <span class="network-card-label">Local IPv4</span>
+                  <div class="network-console-row">
+                    <span class="network-console-label">DNS servers</span>
+                    <span class="network-console-value" id="network-dns">—</span>
                   </div>
-                  <div>
-                    <div class="network-card-value" id="network-ip">—</div>
-                    <div class="network-card-detail">Private address on this network</div>
+                  <div class="network-console-row">
+                    <span class="network-console-label">Public IP</span>
+                    <span class="network-console-value" id="network-public-ip">Checking…</span>
                   </div>
-                </article>
-                <article class="network-card">
-                  <div class="network-card-topline">
-                    <span class="network-card-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><rect x="3" y="4" width="14" height="12" rx="2"></rect><path d="M7 8h6M7 12h6"></path></svg></span>
-                    <span class="network-card-label">Adapter</span>
-                  </div>
-                  <div>
-                    <div class="network-card-value" id="network-adapter">—</div>
-                    <div class="network-card-detail" id="network-ipv6">IPv6 —</div>
-                  </div>
-                </article>
-                <article class="network-card">
-                  <div class="network-card-topline">
-                    <span class="network-card-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M4 6h12v8H4z"></path><path d="M7 9h.01M10 9h.01M13 9h.01M7 12h6"></path></svg></span>
-                    <span class="network-card-label">MAC address</span>
-                  </div>
-                  <div>
-                    <div class="network-card-value" id="network-mac">—</div>
-                    <div class="network-card-detail">Hardware address</div>
-                  </div>
-                </article>
-                <article class="network-card">
-                  <div class="network-card-topline">
-                    <span class="network-card-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7"></circle><path d="M3.5 10h13M10 3a11 11 0 0 1 0 14M10 3a11 11 0 0 0 0 14"></path></svg></span>
-                    <span class="network-card-label">DNS servers</span>
-                  </div>
-                  <div>
-                    <div class="network-card-value is-multiline" id="network-dns">—</div>
-                    <div class="network-card-detail">Configured on this device</div>
-                  </div>
-                </article>
-                <article class="network-card">
-                  <div class="network-card-topline">
-                    <span class="network-card-icon" aria-hidden="true"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7"></circle><path d="M3 10h14M10 3a11 11 0 0 1 0 14M10 3a11 11 0 0 0 0 14"></path></svg></span>
-                    <span class="network-card-label">Public IP</span>
-                  </div>
-                  <div>
-                    <div class="network-card-value" id="network-public-ip">Checking…</div>
-                    <div class="network-card-detail" id="network-public-ip-detail">Lookup via ipify.org</div>
-                  </div>
-                </article>
+                </div>
               </div>
               <p class="network-status" id="network-status" role="status" aria-live="polite">Network status has not been checked yet.</p>
             </section>
@@ -2234,8 +2230,8 @@
       const inboxSummary = document.querySelector("#inbox-summary");
       const inboxRefresh = document.querySelector("#inbox-refresh");
       const networkRefresh = document.querySelector("#network-refresh");
+      const networkConsole = document.querySelector(".network-console");
       const networkConnection = document.querySelector("#network-connection");
-      const networkConnectionDetail = document.querySelector("#network-connection-detail");
       const networkLatency = document.querySelector("#network-latency");
       const networkIp = document.querySelector("#network-ip");
       const networkAdapter = document.querySelector("#network-adapter");
@@ -2243,7 +2239,6 @@
       const networkMac = document.querySelector("#network-mac");
       const networkDns = document.querySelector("#network-dns");
       const networkPublicIp = document.querySelector("#network-public-ip");
-      const networkPublicIpDetail = document.querySelector("#network-public-ip-detail");
       const networkStatus = document.querySelector("#network-status");
 
       function renderInbox(items) {
@@ -2312,32 +2307,27 @@
       async function loadNetworkOverview() {
         networkRefresh.disabled = true;
         networkStatus.textContent = "Checking network connection…";
-        networkConnection.classList.remove("is-online", "is-offline");
+        networkConsole.classList.remove("is-online", "is-offline");
         networkConnection.textContent = "Checking…";
-        networkConnectionDetail.textContent = "Checking external reachability";
         networkLatency.textContent = "—";
         networkIp.textContent = "—";
         networkAdapter.textContent = "—";
-        networkIpv6.textContent = "IPv6 —";
+        networkIpv6.textContent = "—";
         networkMac.textContent = "—";
         networkDns.textContent = "—";
         networkPublicIp.textContent = "Checking…";
-        networkPublicIpDetail.textContent = "Lookup via ipify.org";
         try {
           const result = await window.orbitWindow.network.getOverview();
+          networkConsole.classList.toggle("is-online", result.connected);
+          networkConsole.classList.toggle("is-offline", !result.connected);
           networkConnection.textContent = result.connected ? "Online" : "Offline";
-          networkConnection.classList.add(result.connected ? "is-online" : "is-offline");
-          networkConnectionDetail.textContent = result.connected
-            ? "Internet endpoint reachable"
-            : "No response from internet endpoint";
           networkLatency.textContent = result.latencyMs == null ? "—" : `${result.latencyMs} ms`;
           networkIp.textContent = result.localIp || "Unavailable";
           networkAdapter.textContent = result.interfaceName || "Unavailable";
-          networkIpv6.textContent = `IPv6 ${result.localIpv6 || "unavailable"}`;
+          networkIpv6.textContent = result.localIpv6 || "Unavailable";
           networkMac.textContent = result.macAddress || "Unavailable";
           networkDns.textContent = result.dnsServers.length ? result.dnsServers.join(" · ") : "Unavailable";
           networkPublicIp.textContent = result.publicIp || "Unavailable";
-          networkPublicIpDetail.textContent = result.publicIpError || "Provided by ipify.org";
           const checkedTime = new Date(result.checkedAt).toLocaleTimeString("en-GB", {
             hour: "2-digit",
             minute: "2-digit"
@@ -2346,17 +2336,16 @@
             ? `Updated ${checkedTime} · Local network details only`
             : `Checked at ${checkedTime}`;
         } catch (error) {
+          networkConsole.classList.remove("is-online");
+          networkConsole.classList.add("is-offline");
           networkConnection.textContent = "Unavailable";
-          networkConnection.classList.add("is-offline");
-          networkConnectionDetail.textContent = "Connection check failed";
           networkLatency.textContent = "—";
           networkIp.textContent = "Unavailable";
           networkAdapter.textContent = "Unavailable";
-          networkIpv6.textContent = "IPv6 unavailable";
+          networkIpv6.textContent = "Unavailable";
           networkMac.textContent = "Unavailable";
           networkDns.textContent = "Unavailable";
           networkPublicIp.textContent = "Unavailable";
-          networkPublicIpDetail.textContent = "Public IP lookup failed";
           networkStatus.textContent = error.message || "Network status could not be checked.";
         } finally {
           networkRefresh.disabled = false;

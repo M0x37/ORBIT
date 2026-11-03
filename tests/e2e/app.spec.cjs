@@ -1,5 +1,6 @@
 const { test, expect, _electron: electron } = require("@playwright/test");
 const http = require("node:http");
+const net = require("node:net");
 const fs = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
@@ -25,6 +26,7 @@ function createStubServer() {
   let todos = [];
   let nextId = 1;
   const state = {
+    publicIpFail: false,
     notifications: [
       {
         id: "1",
@@ -48,6 +50,10 @@ function createStubServer() {
       const url = new URL(request.url, "http://127.0.0.1");
 
       if (url.pathname === "/public-ip") {
+        if (state.publicIpFail) {
+          sendJson(response, 500, { message: "Lookup failed" });
+          return;
+        }
         sendJson(response, 200, { ip: "203.0.113.42" });
         return;
       }
@@ -114,12 +120,16 @@ function createStubServer() {
 let electronApp;
 let page;
 let server;
+let probeServer;
 let userDataDir;
 
 test.beforeEach(async () => {
   server = createStubServer();
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  probeServer = net.createServer((socket) => socket.end());
+  await new Promise((resolve) => probeServer.listen(0, "127.0.0.1", resolve));
   const port = server.address().port;
+  const probePort = probeServer.address().port;
   userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), "orbit-e2e-"));
 
   electronApp = await electron.launch({
@@ -133,7 +143,7 @@ test.beforeEach(async () => {
       ORBIT_TODO_BASE_URL: `http://127.0.0.1:${port}`,
       ORBIT_GITHUB_BASE_URL: `http://127.0.0.1:${port}`,
       ORBIT_NETWORK_PROBE_HOST: "127.0.0.1",
-      ORBIT_NETWORK_PROBE_PORT: String(port),
+      ORBIT_NETWORK_PROBE_PORT: String(probePort),
       ORBIT_PUBLIC_IP_URL: `http://127.0.0.1:${port}/public-ip`,
       ORBIT_GITHUB_TOKEN: "ghp_e2e_token"
     }
@@ -145,7 +155,8 @@ test.beforeEach(async () => {
 
 test.afterEach(async () => {
   await electronApp?.close();
-  await new Promise((resolve) => server.close(resolve));
+  if (probeServer?.listening) await new Promise((resolve) => probeServer.close(resolve));
+  if (server.listening) await new Promise((resolve) => server.close(resolve));
   await fs.rm(userDataDir, { recursive: true, force: true });
 });
 
@@ -192,6 +203,12 @@ test("navigates between Overview, To-Do, Links, Network, and Quick Actions", asy
   await expect(page.locator("#network-mac")).not.toHaveText("—");
   await expect(page.locator("#network-dns")).not.toHaveText("—");
   await expect(page.locator("#network-public-ip")).toHaveText("203.0.113.42");
+  await expect(page.locator(".network-console")).toBeVisible();
+  await expect(page.locator(".network-console-row")).toHaveCount(6);
+  await expect(page.locator(".network-card")).toHaveCount(0);
+  await expect(page.locator(".network-console")).toHaveClass(/is-online/);
+  await expect(page.locator("#network-latency")).toHaveText(/\d+ ms/);
+  await expect(page.locator("#network-ipv6")).not.toHaveText("—");
 
   await page.locator('[data-page="overview"]').click();
   await expect(page.locator("#page-title")).toHaveText("Overview");
@@ -202,6 +219,78 @@ test("navigates between Overview, To-Do, Links, Network, and Quick Actions", asy
   await page.locator('.control-settings[data-page="quick-actions"]').click();
   await expect(page.locator("#page-title")).toHaveText("Quick Actions");
   await expect(page.locator(".quick-actions-section")).toHaveClass(/active/);
+});
+
+test("shows the network console offline state when the probe is unreachable", async () => {
+  await new Promise((resolve) => probeServer.close(resolve));
+  await page.locator('[data-page="network"]').click();
+  await expect(page.locator(".network-console")).toHaveClass(/is-offline/);
+  await expect(page.locator("#network-connection")).toHaveText("Offline");
+  await expect(page.locator("#network-latency")).toHaveText("—");
+  await expect(page.locator("#network-public-ip")).toHaveText("203.0.113.42");
+  await expect(page.locator("#network-adapter")).not.toHaveText("—");
+  await expect(page.locator("#network-ip")).not.toHaveText("—");
+  await expect(page.locator("#network-mac")).not.toHaveText("—");
+  await expect(page.locator("#network-dns")).not.toHaveText("—");
+  await expect(page.locator("#network-status")).toHaveText(/Updated \d{2}:\d{2}|Checked at \d{2}:\d{2}/);
+});
+
+test("keeps the network console online when only the public IP lookup fails", async () => {
+  server.state.publicIpFail = true;
+  await page.locator('[data-page="network"]').click();
+  await expect(page.locator(".network-console")).toHaveClass(/is-online/);
+  await expect(page.locator("#network-connection")).toHaveText("Online");
+  await expect(page.locator("#network-public-ip")).toHaveText("Unavailable");
+});
+
+test("fits the network console at the minimum window size with long values", async () => {
+  const windowHandle = await electronApp.browserWindow(page);
+  await windowHandle.evaluate((window) => window.setSize(360, 560));
+  await page.waitForFunction(() => window.innerWidth <= 420);
+  await page.locator('[data-page="network"]').click();
+  await expect(page.locator(".network-console")).toHaveClass(/is-online/);
+
+  await page.evaluate(() => {
+    document.querySelector("#network-ip").textContent = "192.168.178.123";
+    document.querySelector("#network-mac").textContent = "A4:83:E7:2C:91:0B";
+    document.querySelector("#network-ipv6").textContent = "2a02:8109:9a3f:1c00:0000:0000:0000:0042";
+    document.querySelector("#network-dns").textContent = "1.1.1.1 · 8.8.8.8 · 9.9.9.9 · 149.112.112.112";
+  });
+
+  const layout = await page.evaluate(() => {
+    const content = document.querySelector(".page-content");
+    const consoleBox = document.querySelector(".network-console").getBoundingClientRect();
+    const metrics = (selector) => {
+      const element = document.querySelector(selector);
+      return {
+        clientWidth: element.clientWidth,
+        scrollWidth: element.scrollWidth,
+        textOverflow: getComputedStyle(element).textOverflow
+      };
+    };
+    return {
+      contentScrollWidth: content.scrollWidth,
+      contentClientWidth: content.clientWidth,
+      contentScrollHeight: content.scrollHeight,
+      contentClientHeight: content.clientHeight,
+      consoleRight: consoleBox.right,
+      viewportWidth: window.innerWidth,
+      ip: metrics("#network-ip"),
+      mac: metrics("#network-mac"),
+      ipv6: metrics("#network-ipv6"),
+      dns: metrics("#network-dns")
+    };
+  });
+
+  expect(layout.contentScrollWidth).toBeLessThanOrEqual(layout.contentClientWidth);
+  expect(layout.contentScrollHeight).toBeLessThanOrEqual(layout.contentClientHeight);
+  expect(layout.consoleRight).toBeLessThanOrEqual(layout.viewportWidth);
+  expect(layout.ip.scrollWidth).toBeLessThanOrEqual(layout.ip.clientWidth + 1);
+  expect(layout.mac.scrollWidth).toBeLessThanOrEqual(layout.mac.clientWidth + 1);
+  expect(layout.ipv6.scrollWidth).toBeGreaterThan(layout.ipv6.clientWidth);
+  expect(layout.ipv6.textOverflow).toBe("ellipsis");
+  expect(layout.dns.scrollWidth).toBeGreaterThan(layout.dns.clientWidth);
+  expect(layout.dns.textOverflow).toBe("ellipsis");
 });
 
 test("navigates to Inbox and renders unread notifications", async () => {

@@ -1,4 +1,24 @@
-                # Changelog - Orbit Desktop App
+# Changelog - Orbit Desktop App
+
+## [1.10.0] - 2026-11-03
+
+### Added
+- Network overview showing adapter, local IPv4/IPv6, MAC address, DNS servers, public IP, latency, and internet reachability
+
+### Changed
+- Network tab redesigned as a single compact console panel instead of seven cards
+
+## [1.9.1] - 2026-11-02
+
+### Fixed
+- Sentry timeouts now report that Sentry may be experiencing an outage and link to its status page instead of blaming the internet connection
+
+## [1.9.0] - 2026-11-02
+
+### Added
+- Inbox page listing unread GitHub notifications, opened via `GITHUB_TOKEN` in `.env`
+- Clicking a notification opens it on GitHub
+
 ## [1.8.0] - 2026-11-01
 
 ### Added
