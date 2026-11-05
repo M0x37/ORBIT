@@ -13,7 +13,7 @@ const {
   validateGithubToken,
   validateSentrySetup
 } = require("./lib/orbit-shared.js");
-const { fetchWeather } = require("./lib/weather-service.cjs");
+const { fetchWeather, fetchForecast } = require("./lib/weather-service.cjs");
 const { todoRequest: sendTodoRequest } = require("./lib/todo-service.cjs");
 const { loadSentryIssues } = require("./lib/sentry-service.cjs");
 const { fetchNotifications } = require("./lib/github-service.cjs");
@@ -426,6 +426,10 @@ ipcMain.handle("todo:delete", async (_event, id) => {
 
 ipcMain.handle("weather:current", () =>
   fetchWeather(process.env.ORBIT_WEATHER_BASE_URL ? { baseUrl: process.env.ORBIT_WEATHER_BASE_URL } : {})
+);
+
+ipcMain.handle("weather:forecast", () =>
+  fetchForecast(process.env.ORBIT_WEATHER_BASE_URL ? { baseUrl: process.env.ORBIT_WEATHER_BASE_URL } : {})
 );
 
 ipcMain.handle("network:overview", async () => {

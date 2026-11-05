@@ -1,5 +1,17 @@
 # Changelog - Orbit Desktop App
 
+## [1.12.0] - 2026-11-05
+
+### Added
+- Clicking the sidebar weather widget opens an expanded detail view with a large current temperature, condition, high/low, and a scrollable next-24-hours forecast
+- Hourly forecast now starts at the current hour via Open-Meteo `forecast_hours=24`
+
+### Changed
+- Expanded weather view restyled to match the Orbit panel language: dark panel, mono labels, stat tiles, hourly rows, responsive layout, and close via `Esc` or outside click
+
+### Fixed
+- Weather forecast failed because `fetchForecast` and `describeWeather` were not imported, which also forced the sidebar widget to show "Unavailable"
+
 ## [1.11.0] - 2026-11-04
 
 ### Added
@@ -248,3 +260,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI runs E2E on Windows only; Linux/macOS packaging is not configured
 - Release requires pushing a tag that matches the `package.json` version
 - `npm audit` reports moderate vulnerabilities in the Electron build toolchain
+
+---
+
+## Session Notes 2026-11-05
+
+**Work request**: Open a detailed weather view from the sidebar widget, rework its UI, then ship the new version and add it to Windows autostart
+
+**Steps taken**:
+1. Added `lib/weather-expanded.js` and loaded it from `index.html`
+2. Added a `weather:forecast` IPC handler, preload bridge, and `fetchForecast` in `lib/weather-service.cjs`
+3. Fixed missing `fetchForecast`/`describeWeather` imports so the sidebar and detail view load correctly
+4. Reworked the expanded view to the Orbit panel style with high/low tiles and a 24-hour list
+5. Requested the hourly forecast with `forecast_hours=24` so it starts at the current hour
+6. Added forecast integration tests and an E2E test for the expanded view
+7. Bumped version 1.11.0 → 1.12.0, rebuilt the portable EXE, and added a Startup shortcut
+
+**Open topics / Known issues**:
+- Weather location remains hardcoded to Dreikirchen
+- No multi-day/daily forecast yet; the detail view covers the next 24 hours
+- Studio/CI still builds only Windows portable binaries

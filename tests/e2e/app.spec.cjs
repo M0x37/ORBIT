@@ -59,6 +59,21 @@ function createStubServer() {
       }
 
       if (url.pathname === "/forecast") {
+        if (url.searchParams.has("hourly")) {
+          const start = new Date("2026-11-05T16:00:00");
+          const time = Array.from({ length: 24 }, (_, index) => {
+            const slot = new Date(start.getTime() + index * 3600000);
+            return `${slot.getFullYear()}-${String(slot.getMonth() + 1).padStart(2, "0")}-${String(slot.getDate()).padStart(2, "0")}T${String(slot.getHours()).padStart(2, "0")}:00`;
+          });
+          sendJson(response, 200, {
+            hourly: {
+              time,
+              temperature_2m: time.map((_, index) => 7 + index),
+              weather_code: time.map(() => 2)
+            }
+          });
+          return;
+        }
         sendJson(response, 200, { current: { temperature_2m: 7.4, weather_code: 2 } });
         return;
       }
@@ -181,6 +196,22 @@ test("shows a ticking clock and the stubbed weather", async () => {
   });
 
   expect(clock.text).toBe(clock.expected);
+});
+
+test("opens the expanded weather view with hourly details", async () => {
+  await page.locator('.sidebar-widget[aria-label="Time and weather"]').click();
+
+  const modal = page.locator("#weather-expanded-modal");
+  await expect(modal).toBeVisible();
+  await expect(modal.locator(".weather-hero-temp")).toHaveText("7°C");
+  await expect(modal.locator(".weather-hero-label")).toHaveText("Partly cloudy");
+  await expect(modal.locator(".weather-stat")).toHaveCount(2);
+  await expect(modal.locator(".weather-hour-row")).toHaveCount(24);
+  await expect(modal.locator(".weather-hour-time").first()).toHaveText("Now");
+  await expect(modal.locator(".weather-hour-temp").first()).toHaveText(/°C$/);
+
+  await page.keyboard.press("Escape");
+  await expect(modal).toHaveCount(0);
 });
 
 test("navigates between Overview, To-Do, Links, Network, and Quick Actions", async () => {

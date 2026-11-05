@@ -17,7 +17,8 @@ contextBridge.exposeInMainWorld("orbitWindow", {
   },
   // Weather and network
   weather: {
-    get: () => ipcRenderer.invoke("weather:current")
+    get: () => ipcRenderer.invoke("weather:current"),
+    forecast: () => ipcRenderer.invoke("weather:forecast")
   },
   network: {
     getOverview: () => ipcRenderer.invoke("network:overview")

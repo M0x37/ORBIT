@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { fetchWeather, DEFAULT_WEATHER_URL, DEFAULT_LOCATION } = require("../../lib/weather-service.cjs");
+const { fetchWeather, fetchForecast, DEFAULT_WEATHER_URL, DEFAULT_LOCATION } = require("../../lib/weather-service.cjs");
 
 function jsonResponse(status, body, headers = {}) {
   return {
@@ -78,5 +78,52 @@ test("fetchWeather reports malformed payloads", async () => {
   await assert.rejects(
     fetchWeather({ fetchImpl: async () => jsonResponse(200, { current: { temperature_2m: null, weather_code: 2 } }) }),
     /unexpected response/
+  );
+});
+
+test("fetchForecast requests hourly data and maps the first 24 hours", async () => {
+  let requestedUrl;
+  const times = Array.from({ length: 26 }, (_, index) => `2026-11-05T${String(index).padStart(2, "0")}:00`);
+  const temperatures = times.map((_, index) => index);
+  const codes = times.map(() => 2);
+  const fetchImpl = async (url) => {
+    requestedUrl = url;
+    return jsonResponse(200, {
+      hourly: { time: times, temperature_2m: temperatures, weather_code: codes }
+    });
+  };
+
+  const forecast = await fetchForecast({ fetchImpl });
+
+  assert.equal(requestedUrl.searchParams.get("hourly"), "temperature_2m,weather_code");
+  assert.equal(requestedUrl.searchParams.get("forecast_hours"), "24");
+  assert.equal(requestedUrl.searchParams.get("timezone"), "Europe/Berlin");
+  assert.equal(forecast.length, 24);
+  assert.deepEqual(forecast[0], {
+    time: times[0],
+    temperature: 0,
+    weatherCode: 2,
+    label: "Partly cloudy",
+    icon: "partly"
+  });
+});
+
+test("fetchForecast tolerates missing weather codes", async () => {
+  const fetchImpl = async () =>
+    jsonResponse(200, {
+      hourly: { time: ["2026-11-05T10:00"], temperature_2m: [7.2], weather_code: [null] }
+    });
+
+  const forecast = await fetchForecast({ fetchImpl });
+
+  assert.equal(forecast.length, 1);
+  assert.equal(forecast[0].weatherCode, 0);
+  assert.equal(forecast[0].label, "Clear");
+});
+
+test("fetchForecast reports an unexpected payload", async () => {
+  await assert.rejects(
+    fetchForecast({ fetchImpl: async () => jsonResponse(200, { hourly: {} }) }),
+    /unexpected forecast response/
   );
 });
