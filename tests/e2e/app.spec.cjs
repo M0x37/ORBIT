@@ -219,6 +219,33 @@ test("navigates between Overview, To-Do, Links, Network, and Quick Actions", asy
   await page.locator('.control-settings[data-page="quick-actions"]').click();
   await expect(page.locator("#page-title")).toHaveText("Quick Actions");
   await expect(page.locator(".quick-actions-section")).toHaveClass(/active/);
+
+  const quickActions = await page.evaluate(() => ({
+    getState: typeof window.orbitWindow.quickActions.getState,
+    setOutputMuted: typeof window.orbitWindow.quickActions.setOutputMuted,
+    setMicrophoneMuted: typeof window.orbitWindow.quickActions.setMicrophoneMuted,
+    setVolume: typeof window.orbitWindow.quickActions.setVolume,
+    onStateChange: typeof window.orbitWindow.quickActions.onStateChange
+  }));
+  expect(quickActions).toEqual({
+    getState: "function",
+    setOutputMuted: "function",
+    setMicrophoneMuted: "function",
+    setVolume: "function",
+    onStateChange: "function"
+  });
+
+  await expect(page.locator("#quick-actions-heading")).toHaveText("Audio control");
+  await expect(page.locator(".audio-console")).toBeVisible();
+  await expect(page.locator("#audio-current-name")).toBeVisible();
+  await expect(page.locator("#audio-switch")).toBeVisible();
+  await expect(page.locator("#audio-output-mute")).toBeVisible();
+  await expect(page.locator("#audio-mic-mute")).toBeVisible();
+  await expect(page.locator('#audio-volume-slider[type="range"]')).toBeVisible();
+  await expect(page.locator("#audio-volume-value")).toBeVisible();
+  await expect(page.locator("#headset-device")).toBeVisible();
+  await expect(page.locator("#monitor-device")).toBeVisible();
+  await expect(page.locator("#save-audio-devices")).toBeVisible();
 });
 
 test("shows the network console offline state when the probe is unreachable", async () => {
@@ -329,6 +356,7 @@ test("adds, completes, and deletes a To-Do through the real IPC layer", async ()
   await page.locator('[data-page="todo"]').click();
   await expect(page.locator("#page-title")).toHaveText("To-Do");
   await expect(page.locator("#todo-summary")).toHaveText("0 OPEN · 0 DONE");
+  await expect(page.locator("#todo-input")).toHaveAccessibleName("New task");
 
   await page.locator("#todo-input").fill("Write tests");
   await page.locator("#todo-add").click();
@@ -366,16 +394,27 @@ test("fits the minimum window size without scrolling", async () => {
   await page.locator('[data-page="inbox"]').click();
   await expect(page.locator(".inbox-item")).toHaveCount(1);
 
+  await page.locator('.control-settings[data-page="quick-actions"]').click();
+  await expect(page.locator("#page-title")).toHaveText("Quick Actions");
+  await expect(page.locator(".audio-console")).toBeVisible();
+
   const overflow = await page.evaluate(() => {
     const root = document.querySelector(".window");
+    const content = document.querySelector(".page-content");
     return {
       scrollWidth: root.scrollWidth,
       clientWidth: root.clientWidth,
       scrollHeight: root.scrollHeight,
-      clientHeight: root.clientHeight
+      clientHeight: root.clientHeight,
+      contentScrollWidth: content.scrollWidth,
+      contentClientWidth: content.clientWidth,
+      contentScrollHeight: content.scrollHeight,
+      contentClientHeight: content.clientHeight
     };
   });
 
   expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
   expect(overflow.scrollHeight).toBeLessThanOrEqual(overflow.clientHeight);
+  expect(overflow.contentScrollWidth).toBeLessThanOrEqual(overflow.contentClientWidth);
+  expect(overflow.contentScrollHeight).toBeLessThanOrEqual(overflow.contentClientHeight);
 });

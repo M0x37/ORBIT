@@ -421,6 +421,13 @@
         white-space: nowrap;
       }
 
+      .network-description {
+        margin: 0;
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.5;
+      }
+
       .network-status {
         min-height: 17px;
         margin: 12px 0 0;
@@ -448,138 +455,237 @@
         gap: 11px;
       }
 
-      .quick-actions-grid {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .audio-device-setup {
-        display: grid;
-        gap: 15px;
-        max-width: 600px;
-        margin-top: 24px;
-        padding: 18px;
-        border: 1px solid rgba(255, 255, 255, 0.09);
+      .audio-console {
+        overflow: hidden;
+        min-width: 0;
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
         background: linear-gradient(145deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018));
       }
 
-      .audio-device-setup-header {
-        display: grid;
-        gap: 5px;
-      }
-
-      .audio-device-setup-title {
-        margin: 0;
-        color: #e3e4e8;
-        font-size: 12px;
-        font-weight: 600;
-      }
-
-      .audio-device-setup-description {
-        margin: 0;
-        color: var(--muted);
-        font-size: 10px;
-        line-height: 1.5;
-      }
-
-      .audio-device-fields {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-      }
-
-      .audio-device-field {
-        display: grid;
-        min-width: 0;
-        gap: 7px;
-      }
-
-      .audio-device-field label {
-        color: #a4a5ac;
-        font-size: 11px;
-        font-weight: 500;
-      }
-
-      .audio-switch-button {
+      .audio-console-header {
         display: flex;
-        width: min(100%, 600px);
-        min-height: 70px;
         align-items: center;
+        justify-content: space-between;
         gap: 14px;
-        padding: 12px 16px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        color: #f1f1f3;
-        text-align: left;
-        background: rgba(255, 255, 255, 0.035);
-        cursor: pointer;
-        transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+        padding: 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.075);
       }
 
-      .audio-switch-button:hover {
-        transform: translateY(-1px);
-        border-color: rgba(255, 255, 255, 0.2);
-        background: rgba(255, 255, 255, 0.06);
-      }
-
-      .audio-switch-button:focus-visible,
-      .audio-device-save:focus-visible {
-        outline: 2px solid rgba(220, 220, 225, 0.7);
-        outline-offset: 2px;
-      }
-
-      .audio-switch-icon {
-        display: grid;
-        width: 38px;
-        height: 38px;
-        flex: 0 0 38px;
-        place-items: center;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-        color: #d7d8dc;
-        background: rgba(255, 255, 255, 0.045);
-      }
-
-      .audio-switch-icon svg {
-        width: 19px;
-        height: 19px;
-        fill: none;
-        stroke: currentColor;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        stroke-width: 1.5;
-      }
-
-      .audio-switch-copy {
+      .audio-current {
         display: grid;
         min-width: 0;
         flex: 1;
         gap: 4px;
       }
 
-      .audio-switch-title {
-        font-size: 12px;
+      .audio-console-label {
+        color: #85878f;
+        font-size: 10px;
         font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
       }
 
-      .audio-switch-description {
+      #audio-current-name {
+        overflow: hidden;
+        margin: 0;
+        color: #f1f1f3;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: -0.015em;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #audio-current-meta {
+        overflow: hidden;
+        margin: 0;
         color: var(--muted);
         font-size: 10px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
-      .audio-shortcut {
-        flex: 0 0 auto;
-        padding: 4px 7px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 5px;
-        color: #aeb0b7;
-        background: rgba(0, 0, 0, 0.16);
-        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      .audio-switch-button {
+        flex: 0 1 auto;
+        max-width: 46%;
+        min-height: 34px;
+        padding: 0 12px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 7px;
+        color: #ededf0;
+        background: rgba(255, 255, 255, 0.07);
+        font: inherit;
+        font-size: 11px;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+        cursor: pointer;
+        transition: border-color 160ms ease, background 160ms ease;
+      }
+
+      .audio-switch-button:hover {
+        border-color: rgba(255, 255, 255, 0.25);
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .audio-switch-button:focus-visible,
+      .audio-mixer-tile:focus-visible,
+      .audio-volume-tile:focus-within,
+      .audio-device-save:focus-visible {
+        outline: 2px solid rgba(220, 220, 225, 0.7);
+        outline-offset: 2px;
+      }
+
+      .audio-mixer {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        padding: 12px 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.075);
+      }
+
+      .audio-mixer-tile,
+      .audio-volume-tile {
+        min-width: 0;
+        min-height: 52px;
+        padding: 8px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: 8px;
+        color: #e3e4e8;
+        background: rgba(255, 255, 255, 0.03);
+        font: inherit;
+        text-align: left;
+      }
+
+      .audio-mixer-tile {
+        display: grid;
+        gap: 4px;
+        cursor: pointer;
+        transition: border-color 160ms ease, background 160ms ease;
+      }
+
+      .audio-mixer-tile:hover:not(:disabled) {
+        border-color: rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.055);
+      }
+
+      .audio-mixer-tile[aria-pressed="true"] {
+        border-color: rgba(225, 160, 160, 0.28);
+        background: rgba(225, 160, 160, 0.06);
+      }
+
+      .audio-mixer-tile:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+
+      .audio-tile-label,
+      .audio-volume-tile label {
+        color: #85878f;
         font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .audio-tile-state {
+        overflow: hidden;
+        color: #e3e4e8;
+        font-size: 13px;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .audio-mixer-tile[aria-pressed="true"] .audio-tile-state {
+        color: #e1a0a0;
+      }
+
+      .audio-volume-tile {
+        display: grid;
+        gap: 7px;
+        align-content: center;
+      }
+
+      .audio-volume-row {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 8px;
+      }
+
+      #audio-volume-slider {
+        width: 100%;
+        min-width: 0;
+        height: 4px;
+        margin: 0;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #b9bac0, #5c5e66);
+        cursor: pointer;
+        -webkit-appearance: none;
+        appearance: none;
+      }
+
+      #audio-volume-slider::-webkit-slider-thumb {
+        width: 14px;
+        height: 14px;
+        border: 2px solid #1b1c20;
+        border-radius: 50%;
+        background: #e3e4e8;
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25);
+        -webkit-appearance: none;
+        appearance: none;
+      }
+
+      #audio-volume-slider:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+
+      #audio-volume-value {
+        min-width: 32px;
+        color: #e3e4e8;
+        font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+
+      .audio-console-footer {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto;
+        align-items: end;
+        gap: 10px;
+        padding: 12px 14px;
+      }
+
+      .audio-footer-label {
+        align-self: center;
+        color: #85878f;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .audio-device-field {
+        display: grid;
+        min-width: 0;
+        gap: 5px;
+        color: #a4a5ac;
+        font-size: 10px;
+        font-weight: 500;
+      }
+
+      .audio-device-field select {
+        width: 100%;
+        min-width: 0;
       }
 
       .audio-device-save {
-        justify-self: start;
         min-height: 34px;
         padding: 0 14px;
         border: 1px solid rgba(255, 255, 255, 0.14);
@@ -600,6 +706,61 @@
       .audio-device-save:disabled {
         opacity: 0.5;
         cursor: default;
+      }
+
+      @media (max-width: 720px) {
+        .audio-console-header {
+          align-items: center;
+          gap: 8px;
+          padding: 10px 12px;
+        }
+
+        .audio-switch-button {
+          width: auto;
+          max-width: 46%;
+          min-height: 30px;
+          padding: 0 9px;
+        }
+
+        #audio-current-name {
+          font-size: 14px;
+        }
+
+        .audio-mixer {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 6px;
+          padding: 8px 10px;
+        }
+
+        .audio-mixer-tile,
+        .audio-volume-tile {
+          min-height: 44px;
+          padding: 6px 8px;
+        }
+
+        .audio-volume-tile {
+          grid-column: 1 / -1;
+          gap: 4px;
+        }
+
+        .audio-console-footer {
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+          gap: 6px;
+          padding: 8px 10px;
+        }
+
+        .audio-footer-label {
+          display: none;
+        }
+
+        .audio-device-field {
+          gap: 3px;
+        }
+
+        .audio-device-save {
+          min-height: 30px;
+          padding: 0 10px;
+        }
       }
 
       .shortcut-card {
@@ -832,12 +993,47 @@
         color: #62646c;
       }
 
+      .sentry-action {
+        height: 32px;
+        flex: 0 0 auto;
+        padding: 0 14px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 6px;
+        color: #ededf0;
+        background: rgba(255, 255, 255, 0.07);
+        font: inherit;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: border-color 160ms ease, background 160ms ease;
+      }
+
+      .sentry-action:hover:not(:disabled) {
+        border-color: rgba(255, 255, 255, 0.25);
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .sentry-action:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+
+      .sentry-action:focus-visible {
+        outline: 2px solid rgba(220, 220, 225, 0.7);
+        outline-offset: 2px;
+      }
+
       .sentry-form-footer {
         display: flex;
         grid-column: 1 / -1;
+        flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
         gap: 10px;
+      }
+
+      .sentry-form-footer .sentry-action:first-of-type {
+        margin-left: auto;
       }
 
       .sentry-error-list {
@@ -848,26 +1044,6 @@
         padding-right: 4px;
         scrollbar-color: rgba(220, 220, 225, 0.2) transparent;
         scrollbar-width: thin;
-      }
-
-      .sentry-error-list::-webkit-scrollbar {
-        width: 7px;
-      }
-
-      .sentry-error-list::-webkit-scrollbar-track {
-        background: transparent;
-      }
-
-      .sentry-error-list::-webkit-scrollbar-thumb {
-        border: 2px solid transparent;
-        border-radius: 999px;
-        background: rgba(220, 220, 225, 0.2);
-        background-clip: padding-box;
-      }
-
-      .sentry-error-list::-webkit-scrollbar-thumb:hover {
-        background: rgba(220, 220, 225, 0.36);
-        background-clip: padding-box;
       }
 
       .sentry-error-list::-webkit-scrollbar {
@@ -929,20 +1105,6 @@
         color: #a6a7ad;
         font-size: 9px;
         text-transform: uppercase;
-      }
-
-      .sentry-error-meta {
-        display: flex;
-        flex: 0 0 auto;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 4px;
-      }
-
-      .sentry-error-state {
-        color: #85878f;
-        font-size: 9px;
-        text-transform: capitalize;
       }
 
       .sentry-error-meta {
@@ -1267,10 +1429,6 @@
         text-transform: uppercase;
       }
 
-      .todo-empty[hidden] {
-        display: none;
-      }
-
       .todo-status {
         min-height: 15px;
         margin: 9px 0 0;
@@ -1313,10 +1471,6 @@
           padding: 18px 12px;
         }
 
-        .audio-device-fields {
-          grid-template-columns: 1fr;
-        }
-
         @media (max-height: 620px) {
           .desktop {
             padding-top: 10px;
@@ -1334,7 +1488,8 @@
           }
 
           .shortcuts-section,
-          .links-section {
+          .links-section,
+          .quick-actions-section {
             margin-top: 16px;
           }
 
@@ -1422,7 +1577,7 @@
     </style>
   </head>
   <body>
-    <main class="desktop">
+    <div class="desktop">
       <section class="window" id="app-window" aria-label="Orbit app window">
         <header class="titlebar">
           <div class="brand">
@@ -1497,7 +1652,7 @@
               </svg>
               <span>Network</span>
             </button>
-            <div class="sidebar-widget" aria-label="Time and weather">
+            <div class="sidebar-widget" role="group" aria-label="Time and weather">
               <time class="sidebar-clock" id="sidebar-clock">--:--</time>
               <div class="sidebar-weather">
                 <svg id="weather-icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3.5"></circle><path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M15.3 4.7l-1.4 1.4M6.1 13.9l-1.4 1.4"></path></svg>
@@ -1545,37 +1700,45 @@
 
             <section class="quick-actions-section page-section" aria-labelledby="quick-actions-heading">
               <div class="section-heading">
-                <h2 id="quick-actions-heading">Switch audio output</h2>
+                <h2 id="quick-actions-heading">Audio control</h2>
               </div>
-              <div class="shortcut-grid quick-actions-grid">
-                <button class="audio-switch-button" type="button" data-quick-action="toggle-output" aria-label="Switch between headset and monitor">
-                  <span class="audio-switch-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M12 3v6"></path><path d="M12 15v6"></path><path d="M6 9.5a6 6 0 0 1 12 0"></path><path d="M6 14.5a6 6 0 0 0 12 0"></path></svg>
-                  </span>
-                  <span class="audio-switch-copy">
-                    <span class="audio-switch-title">Switch output device</span>
-                    <span class="audio-switch-description">Between your headset and monitor</span>
-                  </span>
-                  <kbd class="audio-shortcut">Alt + Shift + O</kbd>
-                </button>
-              </div>
-              <form class="audio-device-setup" id="audio-device-setup">
-                <div class="audio-device-setup-header">
-                  <h3 class="audio-device-setup-title">Your devices</h3>
-                  <p class="audio-device-setup-description">Choose which headset and monitor the switch button uses.</p>
+              <div class="audio-console">
+                <div class="audio-console-header">
+                  <div class="audio-current">
+                    <span class="audio-console-label">Current output</span>
+                    <p id="audio-current-name">Loading audio…</p>
+                    <p id="audio-current-meta">Reading devices…</p>
+                  </div>
+                  <button id="audio-switch" class="audio-switch-button" type="button" data-quick-action="toggle-output">Switch output</button>
                 </div>
-                <div class="audio-device-fields">
-                  <div class="audio-device-field">
-                    <label for="headset-device">Headset</label>
+                <div class="audio-mixer">
+                  <button id="audio-output-mute" class="audio-mixer-tile" type="button" aria-pressed="false" aria-label="Mute output">
+                    <span class="audio-tile-label">Output</span>
+                    <span id="audio-output-state" class="audio-tile-state">Unmuted</span>
+                  </button>
+                  <button id="audio-mic-mute" class="audio-mixer-tile" type="button" aria-pressed="false" aria-label="Mute microphone">
+                    <span class="audio-tile-label">Microphone</span>
+                    <span id="audio-mic-state" class="audio-tile-state">Live</span>
+                  </button>
+                  <div class="audio-volume-tile">
+                    <label for="audio-volume-slider">Volume</label>
+                    <div class="audio-volume-row">
+                      <input id="audio-volume-slider" type="range" min="0" max="100" step="1" value="0">
+                      <output id="audio-volume-value" for="audio-volume-slider">0%</output>
+                    </div>
+                  </div>
+                </div>
+                <form id="audio-device-setup" class="audio-console-footer">
+                  <span class="audio-footer-label">Devices</span>
+                  <label class="audio-device-field" for="headset-device">Headset
                     <select class="sentry-input" id="headset-device" required></select>
-                  </div>
-                  <div class="audio-device-field">
-                    <label for="monitor-device">Monitor</label>
+                  </label>
+                  <label class="audio-device-field" for="monitor-device">Monitor
                     <select class="sentry-input" id="monitor-device" required></select>
-                  </div>
-                </div>
-                <button class="audio-device-save" id="save-audio-devices" type="submit">Save devices</button>
-              </form>
+                  </label>
+                  <button id="save-audio-devices" class="audio-device-save" type="submit">Save</button>
+                </form>
+              </div>
               <p class="shortcut-status" id="quick-actions-status" role="status" aria-live="polite"></p>
             </section>
 
@@ -1588,7 +1751,7 @@
                   </div>
                   <div class="sentry-header-right">
                     <span class="sentry-summary" id="sentry-summary">— PROJECTS · — ISSUES</span>
-                    <button class="sentry-icon-button" id="sentry-configure-toggle" type="button" aria-label="Sentry settings" title="Sentry settings">
+                    <button class="sentry-icon-button" id="sentry-configure-toggle" type="button" data-mode="connect" aria-label="Sentry settings" title="Sentry settings">
                       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8 2h4l.5 2a6.5 6.5 0 0 1 1.4.8l2-.6 2 3.5-1.5 1.4a6.6 6.6 0 0 1 0 1.7l1.5 1.4-2 3.5-2-.6a6.5 6.5 0 0 1-1.4.8l-.5 2H8l-.5-2a6.5 6.5 0 0 1-1.4.8l-2 .6-2-3.5 1.5-1.4a6.6 6.6 0 0 1 0-1.7L2.1 7.7l2-3.5 2 .6A6.5 6.5 0 0 1 7.5 4L8 2Z"></path><circle cx="10" cy="10" r="2.4"></circle></svg>
                     </button>
                     <button class="sentry-icon-button" id="sentry-refresh" type="button" aria-label="Refresh Sentry" title="Refresh" hidden>
@@ -1663,7 +1826,7 @@
                 </div>
                 <div class="todo-body">
                   <form class="todo-form" id="todo-form">
-                    <input class="todo-input" id="todo-input" name="title" type="text" maxlength="500" placeholder="Add a task..." autocomplete="off" required>
+                    <input class="todo-input" id="todo-input" name="title" type="text" maxlength="500" placeholder="Add a task..." aria-label="New task" autocomplete="off" required>
                     <button class="todo-add" id="todo-add" type="submit">Add</button>
                   </form>
                   <div class="todo-empty" id="todo-empty" hidden>No tasks yet. Add your first one above.</div>
@@ -1719,8 +1882,8 @@
                   <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16.5 7A7 7 0 0 0 4.2 5.2L3 6.5"></path><path d="M3 3.5v3h3"></path><path d="M3.5 13A7 7 0 0 0 15.8 14.8l1.2-1.3"></path><path d="M17 16.5v-3h-3"></path></svg>
                 </button>
               </div>
-              <p class="audio-device-setup-description">Local details stay on this device. Public IP lookup sends a request to ipify.org.</p>
-              <div class="network-console" aria-live="polite">
+              <p class="network-description">Local details stay on this device. Public IP lookup sends a request to ipify.org.</p>
+              <div class="network-console">
                 <div class="network-console-head">
                   <span class="network-console-state">
                     <span class="network-console-dot" aria-hidden="true"></span>
@@ -1761,9 +1924,11 @@
           </main>
         </div>
       </section>
-    </main>
+    </div>
     <script src="lib/orbit-shared.js"></script>
     <script>
+      // --- Window controls ---------------------------------------------------
+
       const maximizeButton = document.querySelector("#maximize");
 
       document.querySelector("#minimize").addEventListener("click", () => {
@@ -1799,6 +1964,18 @@
       const headsetDevice = document.querySelector("#headset-device");
       const monitorDevice = document.querySelector("#monitor-device");
       const saveAudioDevices = document.querySelector("#save-audio-devices");
+      const audioCurrentName = document.querySelector("#audio-current-name");
+      const audioCurrentMeta = document.querySelector("#audio-current-meta");
+      const audioSwitch = document.querySelector("#audio-switch");
+      const audioOutputMute = document.querySelector("#audio-output-mute");
+      const audioOutputState = document.querySelector("#audio-output-state");
+      const audioMicMute = document.querySelector("#audio-mic-mute");
+      const audioMicState = document.querySelector("#audio-mic-state");
+      const audioVolumeSlider = document.querySelector("#audio-volume-slider");
+      const audioVolumeValue = document.querySelector("#audio-volume-value");
+
+      // --- Shortcuts and links ----------------------------------------------
+
       document.querySelectorAll("[data-shortcut]").forEach((button) => {
         button.addEventListener("click", async () => {
           const status = button.closest(".links-section") ? linksStatus : shortcutStatus;
@@ -1811,54 +1988,272 @@
         });
       });
 
+      // --- Audio console -----------------------------------------------------
+
+      let audioDevices = [];
+      let audioPair = null;
+      let audioState = null;
+      let audioToggleInFlight = false;
+      let volumeTimer = null;
+      let pendingVolume = null;
+      let volumeWriteInFlight = false;
+
+      // IPC errors arrive wrapped by Electron; show only the main-process message.
+      const ipcErrorMessage = OrbitShared.ipcErrorMessage;
+
+      function getAudioTarget() {
+        if (!audioPair || !Array.isArray(audioDevices)) return null;
+        const availableIds = new Set(audioDevices.map((device) => device.id));
+        if (!availableIds.has(audioPair.headset.id) || !availableIds.has(audioPair.monitor.id)) {
+          return null;
+        }
+        return audioState?.output?.id === audioPair.headset.id ? audioPair.monitor : audioPair.headset;
+      }
+
+      function syncAudioVolume() {
+        const volume =
+          audioState?.output && Number.isFinite(audioState.output.volume)
+            ? Math.max(0, Math.min(100, Math.round(audioState.output.volume)))
+            : 0;
+        audioVolumeSlider.value = String(volume);
+        audioVolumeValue.textContent = `${volume}%`;
+        audioVolumeSlider.disabled = !audioState?.output;
+      }
+
+      function renderAudioState(state) {
+        audioState = state || { output: null, microphone: null };
+        const output = audioState.output;
+        const microphone = audioState.microphone;
+        const target = getAudioTarget();
+
+        audioCurrentName.textContent = output?.name || "No active output device";
+        audioCurrentName.title = output?.name || "";
+        if (target) {
+          audioCurrentMeta.textContent = `Next: ${target.name} · Alt + Shift + O`;
+          audioSwitch.textContent = `Switch to ${target.name}`;
+          audioSwitch.title = `Switch output to ${target.name}`;
+        } else {
+          audioCurrentMeta.textContent = audioPair ? "Re-select your devices below." : "Choose two devices below.";
+          audioSwitch.textContent = "Switch output";
+          audioSwitch.title = "Switch output";
+        }
+
+        const outputMuted = Boolean(output?.muted);
+        audioOutputMute.disabled = !output;
+        audioOutputMute.setAttribute("aria-pressed", String(outputMuted));
+        audioOutputMute.setAttribute("aria-label", output ? (outputMuted ? "Unmute output" : "Mute output") : "No output device");
+        audioOutputState.textContent = output ? (outputMuted ? "Muted" : "Unmuted") : "Unavailable";
+
+        const microphoneMuted = Boolean(microphone?.muted);
+        audioMicMute.disabled = !microphone;
+        audioMicMute.setAttribute("aria-pressed", String(microphoneMuted));
+        audioMicMute.setAttribute("aria-label", microphone ? (microphoneMuted ? "Unmute microphone" : "Mute microphone") : "No microphone");
+        audioMicState.textContent = microphone ? (microphoneMuted ? "Muted" : "Live") : "Unavailable";
+
+        if (pendingVolume === null && !volumeWriteInFlight) {
+          syncAudioVolume();
+        } else {
+          audioVolumeSlider.disabled = !output;
+        }
+      }
+
+      function updateAudioInfoStatus() {
+        if (!Array.isArray(audioDevices)) return;
+        if (audioDevices.length === 0) {
+          quickActionsStatus.textContent = "No active output devices were found.";
+        } else if (!audioPair) {
+          quickActionsStatus.textContent = "Select your headset and monitor once, then save them.";
+        } else if (getAudioTarget()) {
+          quickActionsStatus.textContent = "Devices ready.";
+        } else {
+          quickActionsStatus.textContent = "Re-select your devices below.";
+        }
+      }
+
+      function populateAudioDevices() {
+        for (const select of [headsetDevice, monitorDevice]) {
+          select.replaceChildren(new Option("Select a device", ""));
+          for (const device of audioDevices) {
+            select.add(new Option(device.name, device.id));
+          }
+        }
+        if (audioPair) {
+          headsetDevice.value = audioPair.headset.id;
+          monitorDevice.value = audioPair.monitor.id;
+        }
+      }
+
       document.querySelectorAll("[data-quick-action]").forEach((button) => {
         button.addEventListener("click", async () => {
+          if (audioToggleInFlight) return;
+          audioToggleInFlight = true;
+          button.disabled = true;
           quickActionsStatus.textContent = "";
           try {
             const result = await window.orbitWindow.quickActions.toggleOutput();
             quickActionsStatus.textContent = result.message;
+            if (result.state) {
+              renderAudioState(result.state);
+            }
           } catch (error) {
-            quickActionsStatus.textContent = error.message || "The output device could not be switched.";
+            quickActionsStatus.textContent = ipcErrorMessage(
+              error,
+              "The output device could not be switched."
+            );
+          } finally {
+            audioToggleInFlight = false;
+            button.disabled = false;
           }
         });
       });
 
-      async function loadAudioDevices() {
+      async function loadAudioConsole() {
         headsetDevice.disabled = true;
         monitorDevice.disabled = true;
         saveAudioDevices.disabled = true;
-        quickActionsStatus.textContent = "Loading output devices…";
-        try {
-          const [devices, pair] = await Promise.all([
-            window.orbitWindow.quickActions.getOutputDevices(),
-            window.orbitWindow.quickActions.getOutputPair()
-          ]);
-          for (const select of [headsetDevice, monitorDevice]) {
-            select.replaceChildren(new Option("Select a device", ""));
-            for (const device of devices) {
-              select.add(new Option(device.name, device.id));
-            }
-          }
+        audioOutputMute.disabled = true;
+        audioMicMute.disabled = true;
+        audioVolumeSlider.disabled = true;
+        quickActionsStatus.textContent = "Loading audio…";
 
-          if (pair) {
-            headsetDevice.value = pair.headset.id;
-            monitorDevice.value = pair.monitor.id;
-          }
-          if (devices.length === 0) {
-            quickActionsStatus.textContent = "No active output devices were found.";
-          } else if (pair && headsetDevice.value && monitorDevice.value) {
-            quickActionsStatus.textContent = "Devices ready.";
-          } else {
-            quickActionsStatus.textContent = "Select your headset and monitor once, then save them.";
-          }
-          saveAudioDevices.disabled = devices.length < 2;
-        } catch (error) {
-          quickActionsStatus.textContent = error.message || "Output devices could not be loaded.";
-        } finally {
+        const [devicesResult, pairResult, stateResult] = await Promise.allSettled([
+          window.orbitWindow.quickActions.getOutputDevices(),
+          window.orbitWindow.quickActions.getOutputPair(),
+          window.orbitWindow.quickActions.getState()
+        ]);
+
+        audioDevices = devicesResult.status === "fulfilled" ? devicesResult.value : null;
+        audioPair = pairResult.status === "fulfilled" ? pairResult.value : null;
+
+        if (devicesResult.status === "fulfilled") {
+          populateAudioDevices();
           headsetDevice.disabled = false;
           monitorDevice.disabled = false;
+          saveAudioDevices.disabled = audioDevices.length < 2;
+        }
+
+        const errors = [];
+        if (stateResult.status === "rejected") {
+          errors.push("The audio state could not be read.");
+        }
+        if (devicesResult.status === "rejected") {
+          errors.push(
+            ipcErrorMessage(devicesResult.reason, "Output devices could not be loaded.")
+          );
+        }
+        if (pairResult.status === "rejected") {
+          errors.push(
+            ipcErrorMessage(
+              pairResult.reason,
+              "The saved output device selection could not be read."
+            )
+          );
+        }
+
+        renderAudioState(
+          stateResult.status === "fulfilled"
+            ? stateResult.value
+            : { output: null, microphone: null }
+        );
+
+        if (errors.length > 0) {
+          quickActionsStatus.textContent = errors[0];
+          return;
+        }
+        updateAudioInfoStatus();
+      }
+
+      async function flushVolume() {
+        if (volumeTimer !== null) {
+          clearTimeout(volumeTimer);
+          volumeTimer = null;
+        }
+        if (volumeWriteInFlight || pendingVolume === null) return;
+
+        volumeWriteInFlight = true;
+        try {
+          while (pendingVolume !== null) {
+            const value = pendingVolume;
+            pendingVolume = null;
+            renderAudioState(await window.orbitWindow.quickActions.setVolume(value));
+          }
+        } catch (error) {
+          pendingVolume = null;
+          quickActionsStatus.textContent = ipcErrorMessage(
+            error,
+            "The volume could not be changed."
+          );
+          try {
+            renderAudioState(await window.orbitWindow.quickActions.getState());
+          } catch {
+            renderAudioState({ output: null, microphone: null });
+          }
+        } finally {
+          volumeWriteInFlight = false;
+          if (pendingVolume !== null) {
+            void flushVolume();
+            return;
+          }
+          syncAudioVolume();
         }
       }
+
+      audioOutputMute.addEventListener("click", async () => {
+        if (!audioState?.output) return;
+        const wasMuted = audioState.output.muted;
+        audioOutputMute.disabled = true;
+        quickActionsStatus.textContent = "";
+        try {
+          renderAudioState(await window.orbitWindow.quickActions.setOutputMuted(!wasMuted));
+          quickActionsStatus.textContent = wasMuted ? "Output unmuted." : "Output muted.";
+        } catch (error) {
+          quickActionsStatus.textContent = ipcErrorMessage(
+            error,
+            "The output device could not be muted."
+          );
+        } finally {
+          audioOutputMute.disabled = !audioState?.output;
+        }
+      });
+
+      audioMicMute.addEventListener("click", async () => {
+        if (!audioState?.microphone) return;
+        const wasMuted = audioState.microphone.muted;
+        audioMicMute.disabled = true;
+        quickActionsStatus.textContent = "";
+        try {
+          renderAudioState(await window.orbitWindow.quickActions.setMicrophoneMuted(!wasMuted));
+          quickActionsStatus.textContent = wasMuted ? "Microphone live." : "Microphone muted.";
+        } catch (error) {
+          quickActionsStatus.textContent = ipcErrorMessage(
+            error,
+            "The microphone could not be muted."
+          );
+        } finally {
+          audioMicMute.disabled = !audioState?.microphone;
+        }
+      });
+
+      audioVolumeSlider.addEventListener("input", () => {
+        const value = Number(audioVolumeSlider.value);
+        audioVolumeValue.textContent = `${value}%`;
+        pendingVolume = value;
+        if (volumeTimer !== null) {
+          clearTimeout(volumeTimer);
+        }
+        volumeTimer = setTimeout(() => {
+          volumeTimer = null;
+          void flushVolume();
+        }, 150);
+      });
+
+      audioVolumeSlider.addEventListener("change", () => {
+        if (volumeTimer !== null) {
+          clearTimeout(volumeTimer);
+          volumeTimer = null;
+        }
+        void flushVolume();
+      });
 
       audioDeviceSetup.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -1869,13 +2264,24 @@
             headsetId: headsetDevice.value,
             monitorId: monitorDevice.value
           });
+          audioPair = await window.orbitWindow.quickActions.getOutputPair();
+          renderAudioState(audioState || { output: null, microphone: null });
           quickActionsStatus.textContent = "Devices saved.";
         } catch (error) {
-          quickActionsStatus.textContent = error.message || "The output devices could not be saved.";
+          quickActionsStatus.textContent = ipcErrorMessage(
+            error,
+            "The output devices could not be saved."
+          );
         } finally {
-          saveAudioDevices.disabled = false;
+          saveAudioDevices.disabled = !Array.isArray(audioDevices) || audioDevices.length < 2;
         }
       });
+
+      window.orbitWindow.quickActions.onStateChange((state) => {
+        renderAudioState(state);
+      });
+
+      // --- Clock and weather -------------------------------------------------
 
       const sidebarClock = document.querySelector("#sidebar-clock");
       const weatherIcon = document.querySelector("#weather-icon");
@@ -1918,6 +2324,8 @@
       loadWeather();
       setInterval(loadWeather, 15 * 60 * 1000);
 
+      // --- Sentry ------------------------------------------------------------
+
       const sentryMessage = document.querySelector("#sentry-message");
       const sentryForm = document.querySelector("#sentry-form");
       const sentryErrors = document.querySelector("#sentry-errors");
@@ -1927,7 +2335,6 @@
       const sentryClear = document.querySelector("#sentry-clear");
       const sentryEmpty = document.querySelector("#sentry-empty");
       const sentrySummary = document.querySelector("#sentry-summary");
-      const sentryBody = document.querySelector("#sentry-body");
 
       function renderSentryIssues(issues) {
         sentryErrors.replaceChildren();
@@ -1935,7 +2342,6 @@
           return;
         }
 
-        sentryErrors.className = "sentry-error-list";
         for (const issue of issues) {
           const item = document.createElement("div");
           item.className = "sentry-error-item";
@@ -1985,7 +2391,7 @@
           }
         } catch (error) {
           sentryEmpty.hidden = true;
-          sentryMessage.textContent = error.message || "Sentry errors could not be loaded.";
+          sentryMessage.textContent = ipcErrorMessage(error, "Sentry errors could not be loaded.");
           sentryMessage.classList.add("sentry-error");
         } finally {
           sentryRefresh.disabled = false;
@@ -1995,6 +2401,7 @@
       async function updateSentryStatus() {
         try {
           const status = await window.orbitWindow.sentry.getStatus();
+          sentryConfigureToggle.dataset.mode = status.configured ? "settings" : "connect";
           sentryConfigureToggle.setAttribute("aria-label", status.configured ? "Sentry settings" : "Connect Sentry");
           sentryConfigureToggle.title = status.configured ? "Sentry settings" : "Connect Sentry";
           sentryRefresh.hidden = !status.configured;
@@ -2017,7 +2424,7 @@
             sentryConfigureToggle.disabled = false;
           }
         } catch (error) {
-          sentryMessage.textContent = error.message || "Sentry configuration could not be read.";
+          sentryMessage.textContent = ipcErrorMessage(error, "Sentry configuration could not be read.");
           sentryMessage.classList.add("sentry-error");
         }
       }
@@ -2032,7 +2439,7 @@
 
         sentryForm.hidden = false;
         sentryToken.required = true;
-        if (sentryConfigureToggle.title === "Sentry settings") {
+        if (sentryConfigureToggle.dataset.mode === "settings") {
           sentryToken.required = false;
           sentryToken.placeholder = "Leave blank to keep the stored token";
           sentryClear.hidden = false;
@@ -2049,6 +2456,7 @@
           sentryErrors.replaceChildren();
           sentryMessage.textContent = "Sentry has been disconnected.";
           sentryMessage.classList.remove("sentry-error");
+          sentryConfigureToggle.dataset.mode = "connect";
           sentryConfigureToggle.setAttribute("aria-label", "Connect Sentry");
           sentryConfigureToggle.title = "Connect Sentry";
           sentryConfigureToggle.disabled = false;
@@ -2058,7 +2466,7 @@
           sentryToken.value = "";
           sentryToken.required = true;
         } catch (error) {
-          sentryMessage.textContent = error.message || "Sentry could not be disconnected.";
+          sentryMessage.textContent = ipcErrorMessage(error, "Sentry could not be disconnected.");
           sentryMessage.classList.add("sentry-error");
         } finally {
           sentryClear.disabled = false;
@@ -2084,6 +2492,7 @@
           const result = await window.orbitWindow.sentry.configure(config);
           sentryToken.value = "";
           sentryForm.hidden = true;
+          sentryConfigureToggle.dataset.mode = "settings";
           sentryConfigureToggle.disabled = result.source === "env";
           sentryConfigureToggle.setAttribute(
             "aria-label",
@@ -2100,12 +2509,14 @@
               sentryMessage.textContent += " · Signed in automatically";
           }
         } catch (error) {
-          sentryMessage.textContent = error.message || "Sentry could not be connected.";
+          sentryMessage.textContent = ipcErrorMessage(error, "Sentry could not be connected.");
           sentryMessage.classList.add("sentry-error");
         } finally {
           saveButton.disabled = false;
         }
       });
+
+      // --- To-Do -------------------------------------------------------------
 
       const todoForm = document.querySelector("#todo-form");
       const todoInput = document.querySelector("#todo-input");
@@ -2119,10 +2530,6 @@
       function setTodoStatus(message, isError = false) {
         todoStatus.textContent = message;
         todoStatus.classList.toggle("is-error", isError);
-      }
-
-      function todoErrorMessage(error, fallback) {
-        return OrbitShared.todoErrorMessage(error, fallback);
       }
 
       function renderTodos(items) {
@@ -2149,7 +2556,7 @@
               await loadTodos();
             } catch (error) {
               checkbox.checked = !checkbox.checked;
-              setTodoStatus(todoErrorMessage(error, "Could not update the task."), true);
+              setTodoStatus(ipcErrorMessage(error, "Could not update the task."), true);
             } finally {
               checkbox.disabled = false;
             }
@@ -2172,7 +2579,7 @@
               await window.orbitWindow.todo.remove(item.id);
               await loadTodos();
             } catch (error) {
-              setTodoStatus(todoErrorMessage(error, "Could not delete the task."), true);
+              setTodoStatus(ipcErrorMessage(error, "Could not delete the task."), true);
               remove.disabled = false;
             }
           });
@@ -2193,7 +2600,7 @@
           todoSummary.textContent = "— OPEN · — DONE";
           todoEmpty.textContent = "Could not load tasks.";
           todoEmpty.hidden = false;
-          setTodoStatus(todoErrorMessage(error, "Could not load tasks."), true);
+          setTodoStatus(ipcErrorMessage(error, "Could not load tasks."), true);
         } finally {
           todoRefresh.disabled = false;
         }
@@ -2216,7 +2623,7 @@
           await loadTodos();
           todoInput.focus();
         } catch (error) {
-          setTodoStatus(todoErrorMessage(error, "Could not add the task."), true);
+          setTodoStatus(ipcErrorMessage(error, "Could not add the task."), true);
         } finally {
           todoAdd.disabled = false;
         }
@@ -2224,11 +2631,15 @@
 
       todoRefresh.addEventListener("click", loadTodos);
 
+      // --- GitHub inbox ------------------------------------------------------
+
       const inboxList = document.querySelector("#inbox-list");
       const inboxEmpty = document.querySelector("#inbox-empty");
       const inboxStatus = document.querySelector("#inbox-status");
       const inboxSummary = document.querySelector("#inbox-summary");
       const inboxRefresh = document.querySelector("#inbox-refresh");
+      // --- Network -----------------------------------------------------------
+
       const networkRefresh = document.querySelector("#network-refresh");
       const networkConsole = document.querySelector(".network-console");
       const networkConnection = document.querySelector("#network-connection");
@@ -2270,7 +2681,7 @@
             try {
               await window.orbitWindow.github.open(item.url);
             } catch (error) {
-              inboxStatus.textContent = error.message || "This link cannot be opened.";
+              inboxStatus.textContent = ipcErrorMessage(error, "This link cannot be opened.");
             }
           });
           inboxList.append(row);
@@ -2296,7 +2707,7 @@
           inboxList.replaceChildren();
           inboxEmpty.hidden = true;
           inboxSummary.textContent = "— UNREAD";
-          inboxStatus.textContent = error.message || "GitHub notifications could not be loaded.";
+          inboxStatus.textContent = ipcErrorMessage(error, "GitHub notifications could not be loaded.");
         } finally {
           inboxRefresh.disabled = false;
         }
@@ -2346,13 +2757,15 @@
           networkMac.textContent = "Unavailable";
           networkDns.textContent = "Unavailable";
           networkPublicIp.textContent = "Unavailable";
-          networkStatus.textContent = error.message || "Network status could not be checked.";
+          networkStatus.textContent = ipcErrorMessage(error, "Network status could not be checked.");
         } finally {
           networkRefresh.disabled = false;
         }
       }
 
       networkRefresh.addEventListener("click", loadNetworkOverview);
+
+      // --- Page navigation ---------------------------------------------------
 
       const sidebarItems = document.querySelectorAll(".sidebar-item[data-page], .control-settings[data-page]");
       const pageSections = document.querySelectorAll(".page-section");
@@ -2384,7 +2797,7 @@
           document.querySelector(".quick-actions-section").classList.add("active");
           eyebrow.textContent = "Workspace";
           title.textContent = "Quick Actions";
-          loadAudioDevices();
+          loadAudioConsole();
         } else {
           document.querySelector(".shortcuts-section").classList.add("active");
           document.querySelector(".sentry-section").classList.add("active");
@@ -2396,6 +2809,8 @@
       sidebarItems.forEach((item) => {
         item.addEventListener("click", () => showPage(item.dataset.page));
       });
+
+      // --- Startup -----------------------------------------------------------
 
       updateSentryStatus();
     </script>

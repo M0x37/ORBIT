@@ -1,9 +1,13 @@
+// Orbit main process: frameless window, tray, global hotkeys, and every native IPC handler.
+
 const { app, BrowserWindow, globalShortcut, ipcMain, Menu, safeStorage, shell, Tray } = require("electron");
 const { execFile } = require("node:child_process");
 const fs = require("node:fs/promises");
+const os = require("node:os");
 const path = require("node:path");
 const {
   mapGithubNotification,
+  normalizeTodoTitle,
   parseEnvFile,
   parseSentryEnvFile,
   validateGithubToken,
@@ -14,10 +18,13 @@ const { todoRequest: sendTodoRequest } = require("./lib/todo-service.cjs");
 const { loadSentryIssues } = require("./lib/sentry-service.cjs");
 const { fetchNotifications } = require("./lib/github-service.cjs");
 const { getNetworkOverview } = require("./lib/network-service.cjs");
+const { AUDIO_DEVICE_SCRIPT, createAudioService } = require("./lib/audio-service.cjs");
 
 if (process.env.ORBIT_TEST_USER_DATA) {
   app.setPath("userData", path.resolve(process.env.ORBIT_TEST_USER_DATA));
 }
+
+// --- Runtime paths and feature flags ---------------------------------------
 
 const E2E_MODE = process.env.ORBIT_E2E === "1";
 
@@ -35,9 +42,15 @@ const envPaths = () => {
     path.dirname(executableDirectory)
   ].filter(Boolean).map((directory) => path.join(directory, ".env")))];
 };
-const artCraftLauncherPath = process.env.APPDATA
-  ? path.join(process.env.APPDATA, "Microsoft", "Windows", "Start Menu", "Programs", "ArtCraft Launcher.lnk")
-  : "C:\\Users\\maxsc\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\ArtCraft Launcher.lnk";
+const appDataDirectory = process.env.APPDATA || path.join(process.env.USERPROFILE || os.homedir(), "AppData", "Roaming");
+const artCraftLauncherPath = path.join(
+  appDataDirectory,
+  "Microsoft",
+  "Windows",
+  "Start Menu",
+  "Programs",
+  "ArtCraft Launcher.lnk"
+);
 
 const TODO_SUPABASE_URL = process.env.ORBIT_TODO_BASE_URL || "https://yklavrwnlzizftzytehf.supabase.co";
 const TODO_SUPABASE_KEY = "sb_publishable_8SDYoTbHj-cbCIgkp28KaQ_JVaqb4EN";
@@ -49,6 +62,8 @@ let mainWindow = null;
 let tray = null;
 let isQuitting = false;
 let hotkeyRegistered = false;
+
+// --- Shortcut targets ------------------------------------------------------
 
 const shortcuts = {
   youtube: { kind: "url", target: "https://www.youtube.com/" },
@@ -63,7 +78,7 @@ const shortcuts = {
   artcraftLauncher: { kind: "app", target: artCraftLauncherPath }
 };
 
-function todoRequest(search, options = {}) {
+function requestTodoRows(search, options = {}) {
   return sendTodoRequest({
     baseUrl: TODO_SUPABASE_URL,
     apiKey: TODO_SUPABASE_KEY,
@@ -73,163 +88,9 @@ function todoRequest(search, options = {}) {
   });
 }
 
-const AUDIO_DEVICE_SCRIPT = `
-$ErrorActionPreference = 'Stop'
-Add-Type -TypeDefinition @'
-using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+// --- Audio service and PowerShell bridge -----------------------------------
 
-[ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
-class AudioDeviceEnumerator { }
-
-[ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-interface IMMDeviceEnumerator {
-  [PreserveSig] int EnumAudioEndpoints(int dataFlow, uint stateMask, out IMMDeviceCollection devices);
-  [PreserveSig] int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice device);
-  [PreserveSig] int GetDevice([MarshalAs(UnmanagedType.LPWStr)] string id, out IMMDevice device);
-  [PreserveSig] int RegisterEndpointNotificationCallback(IntPtr client);
-  [PreserveSig] int UnregisterEndpointNotificationCallback(IntPtr client);
-}
-
-[ComImport, Guid("0BD7A1BE-7A1A-44DB-8397-CC5392387B5E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-interface IMMDeviceCollection {
-  [PreserveSig] int GetCount(out uint count);
-  [PreserveSig] int Item(uint index, out IMMDevice device);
-}
-
-[ComImport, Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-interface IMMDevice {
-  [PreserveSig] int Activate(ref Guid iid, uint context, IntPtr parameters, out IntPtr result);
-  [PreserveSig] int OpenPropertyStore(uint mode, out IPropertyStore store);
-  [PreserveSig] int GetId([MarshalAs(UnmanagedType.LPWStr)] out string id);
-  [PreserveSig] int GetState(out uint state);
-}
-
-[ComImport, Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-interface IPropertyStore {
-  [PreserveSig] int GetCount(out uint count);
-  [PreserveSig] int GetAt(uint index, out PropertyKey key);
-  [PreserveSig] int GetValue(ref PropertyKey key, out PropVariant value);
-  [PreserveSig] int SetValue(ref PropertyKey key, ref PropVariant value);
-  [PreserveSig] int Commit();
-}
-
-[StructLayout(LayoutKind.Sequential, Pack = 4)]
-struct PropertyKey {
-  public Guid FormatId;
-  public uint PropertyId;
-}
-
-[StructLayout(LayoutKind.Explicit)]
-struct PropVariant {
-  [FieldOffset(0)] public ushort Type;
-  [FieldOffset(8)] public IntPtr PointerValue;
-}
-
-[ComImport, Guid("F8679F50-850A-41CF-9C72-430F290290C8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-interface IPolicyConfig {
-  [PreserveSig] int GetMixFormat([MarshalAs(UnmanagedType.LPWStr)] string id, out IntPtr format);
-  [PreserveSig] int GetDeviceFormat([MarshalAs(UnmanagedType.LPWStr)] string id, int defaultFormat, out IntPtr format);
-  [PreserveSig] int ResetDeviceFormat([MarshalAs(UnmanagedType.LPWStr)] string id);
-  [PreserveSig] int SetDeviceFormat([MarshalAs(UnmanagedType.LPWStr)] string id, IntPtr format, IntPtr mixFormat);
-  [PreserveSig] int GetProcessingPeriod([MarshalAs(UnmanagedType.LPWStr)] string id, out long defaultPeriod, out long minimumPeriod);
-  [PreserveSig] int SetProcessingPeriod([MarshalAs(UnmanagedType.LPWStr)] string id, ref long period);
-  [PreserveSig] int GetShareMode([MarshalAs(UnmanagedType.LPWStr)] string id, IntPtr mode);
-  [PreserveSig] int SetShareMode([MarshalAs(UnmanagedType.LPWStr)] string id, IntPtr mode);
-  [PreserveSig] int GetPropertyValue([MarshalAs(UnmanagedType.LPWStr)] string id, ref PropertyKey key, IntPtr value);
-  [PreserveSig] int SetPropertyValue([MarshalAs(UnmanagedType.LPWStr)] string id, ref PropertyKey key, IntPtr value);
-  [PreserveSig] int SetDefaultEndpoint([MarshalAs(UnmanagedType.LPWStr)] string id, int role);
-  [PreserveSig] int SetEndpointVisibility([MarshalAs(UnmanagedType.LPWStr)] string id, int visible);
-}
-
-public static class OrbitAudio {
-  static IMMDeviceEnumerator CreateEnumerator() {
-    return (IMMDeviceEnumerator)new AudioDeviceEnumerator();
-  }
-
-  static string FriendlyName(IMMDevice device) {
-    IPropertyStore store;
-    Marshal.ThrowExceptionForHR(device.OpenPropertyStore(0, out store));
-    var key = new PropertyKey {
-      FormatId = new Guid("A45C254E-DF1C-4EFD-8020-67D146A850E0"),
-      PropertyId = 14
-    };
-    PropVariant value;
-    Marshal.ThrowExceptionForHR(store.GetValue(ref key, out value));
-    try {
-      if (value.Type != 31 || value.PointerValue == IntPtr.Zero) return "Unknown device";
-      return Marshal.PtrToStringUni(value.PointerValue);
-    } finally {
-      PropVariantClear(ref value);
-      Marshal.ReleaseComObject(store);
-    }
-  }
-
-  [DllImport("ole32.dll")]
-  static extern int PropVariantClear(ref PropVariant value);
-
-  public static object[] GetDevices() {
-    var enumerator = CreateEnumerator();
-    IMMDeviceCollection collection;
-    Marshal.ThrowExceptionForHR(enumerator.EnumAudioEndpoints(0, 1, out collection));
-    uint count;
-    Marshal.ThrowExceptionForHR(collection.GetCount(out count));
-    var result = new List<object>();
-    for (uint i = 0; i < count; i++) {
-      IMMDevice device;
-      Marshal.ThrowExceptionForHR(collection.Item(i, out device));
-      string id;
-      Marshal.ThrowExceptionForHR(device.GetId(out id));
-      result.Add(new { id = id, name = FriendlyName(device) });
-      Marshal.ReleaseComObject(device);
-    }
-    Marshal.ReleaseComObject(collection);
-    Marshal.ReleaseComObject(enumerator);
-    return result.ToArray();
-  }
-
-  public static string GetDefaultDeviceId() {
-    var enumerator = CreateEnumerator();
-    IMMDevice device;
-    Marshal.ThrowExceptionForHR(enumerator.GetDefaultAudioEndpoint(0, 0, out device));
-    string id;
-    Marshal.ThrowExceptionForHR(device.GetId(out id));
-    Marshal.ReleaseComObject(device);
-    Marshal.ReleaseComObject(enumerator);
-    return id;
-  }
-
-  public static void SetDefaultDevice(string id) {
-    var policyType = Type.GetTypeFromCLSID(new Guid("870AF99C-171D-4F9E-AF0D-E63DF40C2BC9"));
-    var policy = (IPolicyConfig)Activator.CreateInstance(policyType);
-    for (int role = 0; role < 3; role++) {
-      Marshal.ThrowExceptionForHR(policy.SetDefaultEndpoint(id, role));
-    }
-    Marshal.ReleaseComObject(policy);
-  }
-}
-'@
-
-switch ($env:ORBIT_AUDIO_ACTION) {
-  'list' {
-    ConvertTo-Json -InputObject ([OrbitAudio]::GetDevices()) -Compress -Depth 4
-  }
-  'default' {
-    [OrbitAudio]::GetDefaultDeviceId()
-  }
-  'set' {
-    [OrbitAudio]::SetDefaultDevice($env:ORBIT_AUDIO_DEVICE_ID)
-    'ok'
-  }
-  default {
-    throw 'Unknown audio command.'
-  }
-}
-`;
-
-function runPowerShellCommand(args) {
-  const [action, deviceId] = args;
+function runPowerShellCommand(action, payload = {}) {
   return new Promise((resolve, reject) => {
     execFile(
       "powershell.exe",
@@ -240,7 +101,9 @@ function runPowerShellCommand(args) {
         env: {
           ...process.env,
           ORBIT_AUDIO_ACTION: action,
-          ORBIT_AUDIO_DEVICE_ID: deviceId || ""
+          ORBIT_AUDIO_DEVICE_ID: payload.deviceId || "",
+          ORBIT_AUDIO_MUTED: payload.muted ? "1" : "0",
+          ORBIT_AUDIO_VOLUME: payload.volume === undefined ? "" : String(payload.volume)
         }
       },
       (error, stdout, stderr) => {
@@ -254,73 +117,21 @@ function runPowerShellCommand(args) {
   });
 }
 
-async function getAudioDevices() {
-  const output = await runPowerShellCommand(["list"]);
+const audioService = createAudioService({
+  runPowerShell: runPowerShellCommand,
+  getConfigPath: outputDevicesConfigPath,
+  fsImpl: fs
+});
+
+// --- Environment configuration (.env) --------------------------------------
+
+async function readEnvTextFile(envPath) {
   try {
-    const devices = JSON.parse(output || "[]");
-    if (!Array.isArray(devices)) throw new Error("unexpected device list");
-    return devices.filter((device) => typeof device?.id === "string" && typeof device?.name === "string");
-  } catch {
-    throw new Error("The audio device list could not be read.");
-  }
-}
-
-async function saveOutputDevicePair(input) {
-  const headsetId = input?.headsetId;
-  const monitorId = input?.monitorId;
-  if (typeof headsetId !== "string" || typeof monitorId !== "string" || headsetId === monitorId) {
-    throw new Error("Select two different output devices.");
-  }
-
-  const devices = await getAudioDevices();
-  const headset = devices.find((device) => device.id === headsetId);
-  const monitor = devices.find((device) => device.id === monitorId);
-  if (!headset || !monitor) throw new Error("The selected output device is no longer available.");
-
-  const config = {
-    headset: { id: headset.id, name: headset.name },
-    monitor: { id: monitor.id, name: monitor.name }
-  };
-  const configPath = outputDevicesConfigPath();
-  const temporaryPath = `${configPath}.tmp`;
-  try {
-    await fs.writeFile(temporaryPath, JSON.stringify(config), { mode: 0o600 });
-    await fs.rename(temporaryPath, configPath);
-  } catch {
-    await fs.rm(temporaryPath, { force: true }).catch(() => {});
-    throw new Error("The output device selection could not be saved.");
-  }
-  return config;
-}
-
-async function getOutputDevicePair() {
-  try {
-    const config = JSON.parse(await fs.readFile(outputDevicesConfigPath(), "utf8"));
-    if (typeof config.headset?.id !== "string" || typeof config.monitor?.id !== "string") {
-      throw new Error("invalid saved selection");
-    }
-    return config;
+    return (await fs.readFile(envPath, "utf8")).replace(/^\uFEFF/, "");
   } catch (error) {
     if (error.code === "ENOENT") return null;
-    throw new Error("The saved output device selection could not be read.");
+    throw new Error("The .env file could not be read.");
   }
-}
-
-async function toggleAudioOutputDevice() {
-  const pair = await getOutputDevicePair();
-  if (!pair) throw new Error("Select your headset and monitor in Quick Actions first.");
-
-  const devices = await getAudioDevices();
-  const headset = devices.find((device) => device.id === pair.headset.id);
-  const monitor = devices.find((device) => device.id === pair.monitor.id);
-  if (!headset || !monitor) {
-    throw new Error("A selected output device is unavailable. Re-select your devices in Quick Actions.");
-  }
-
-  const currentId = await runPowerShellCommand(["default"]);
-  const target = currentId === headset.id ? monitor : headset;
-  await runPowerShellCommand(["set", target.id]);
-  return { ok: true, message: `Output switched to ${target.name}.` };
 }
 
 async function readSentryEnvConfig() {
@@ -328,13 +139,8 @@ async function readSentryEnvConfig() {
 
   let foundPartialConfig = false;
   for (const envPath of envPaths()) {
-    let file;
-    try {
-      file = (await fs.readFile(envPath, "utf8")).replace(/^\uFEFF/, "");
-    } catch (error) {
-      if (error.code === "ENOENT") continue;
-      throw new Error("The .env file could not be read.");
-    }
+    const file = await readEnvTextFile(envPath);
+    if (file === null) continue;
 
     const values = parseSentryEnvFile(file);
     const provided = Object.values(values).filter(Boolean).length;
@@ -365,24 +171,30 @@ async function readSentryEnvConfig() {
   return null;
 }
 
+function sentryStatusFromEnv(envConfig) {
+  return {
+    configured: true,
+    source: "env",
+    organization: envConfig.organization,
+    project: envConfig.project
+  };
+}
+
 async function readGithubToken() {
   if (process.env.ORBIT_GITHUB_TOKEN) return validateGithubToken(process.env.ORBIT_GITHUB_TOKEN);
   if (process.env.ORBIT_NO_ENV === "1") return null;
 
   for (const envPath of envPaths()) {
-    let file;
-    try {
-      file = (await fs.readFile(envPath, "utf8")).replace(/^\uFEFF/, "");
-    } catch (error) {
-      if (error.code === "ENOENT") continue;
-      throw new Error("The .env file could not be read.");
-    }
+    const file = await readEnvTextFile(envPath);
+    if (file === null) continue;
 
     const values = parseEnvFile(file, ["GITHUB_TOKEN"]);
     if (values.GITHUB_TOKEN) return validateGithubToken(values.GITHUB_TOKEN);
   }
   return null;
 }
+
+// --- Window, tray, and global hotkeys --------------------------------------
 
 function showWindow() {
   if (!app.isReady()) return;
@@ -456,24 +268,32 @@ function createTray() {
   }
 }
 
-function registerGlobalHotkey() {
-  hotkeyRegistered = globalShortcut.register(GLOBAL_HOTKEY, toggleWindow);
-  if (!hotkeyRegistered) {
-    console.error(`Orbit could not register the global shortcut ${GLOBAL_HOTKEY}.`);
+function registerOrbitHotkey(accelerator, handler) {
+  const registered = globalShortcut.register(accelerator, handler);
+  if (!registered) {
+    console.error(`Orbit could not register the global shortcut ${accelerator}.`);
   }
+  return registered;
+}
+
+function registerGlobalHotkey() {
+  hotkeyRegistered = registerOrbitHotkey(GLOBAL_HOTKEY, toggleWindow);
   updateTrayMenu();
 }
 
 function registerQuickActionHotkey() {
-  const quickHotkeyRegistered = globalShortcut.register(QUICK_ACTION_HOTKEY, () => {
-    toggleAudioOutputDevice().catch((error) => {
-      console.error("Orbit could not switch the output device.", error);
-    });
+  registerOrbitHotkey(QUICK_ACTION_HOTKEY, () => {
+    audioService
+      .toggleOutput()
+      .then((result) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send("audio:state-changed", result.state);
+        }
+      })
+      .catch((error) => {
+        console.error("Orbit could not switch the output device.", error);
+      });
   });
-
-  if (!quickHotkeyRegistered) {
-    console.error(`Orbit could not register the global shortcut ${QUICK_ACTION_HOTKEY}.`);
-  }
 }
 
 function createWindow() {
@@ -512,6 +332,8 @@ function createWindow() {
   });
 }
 
+// --- IPC: window controls and shortcuts ------------------------------------
+
 ipcMain.on("window:minimize", (event) => {
   BrowserWindow.fromWebContents(event.sender)?.minimize();
 });
@@ -544,24 +366,29 @@ ipcMain.handle("shortcut:open", async (_event, shortcutId) => {
   await shell.openExternal(shortcut.target);
 });
 
-ipcMain.handle("audio:list-output-devices", async () => getAudioDevices());
-ipcMain.handle("audio:get-output-pair", async () => getOutputDevicePair());
-ipcMain.handle("audio:save-output-pair", async (_event, input) => saveOutputDevicePair(input));
-ipcMain.handle("audio:toggle-output", async () => toggleAudioOutputDevice());
+// --- IPC: audio ------------------------------------------------------------
+
+ipcMain.handle("audio:list-output-devices", async () => audioService.listOutputDevices());
+ipcMain.handle("audio:get-output-pair", async () => audioService.getOutputPair());
+ipcMain.handle("audio:save-output-pair", async (_event, input) => audioService.saveOutputPair(input));
+ipcMain.handle("audio:toggle-output", async () => audioService.toggleOutput());
+ipcMain.handle("audio:get-state", async () => audioService.getState());
+ipcMain.handle("audio:set-output-mute", async (_event, muted) => audioService.setOutputMuted(muted));
+ipcMain.handle("audio:set-mic-mute", async (_event, muted) => audioService.setMicrophoneMuted(muted));
+ipcMain.handle("audio:set-volume", async (_event, volume) => audioService.setOutputVolume(volume));
+
+// --- IPC: To-Do (Supabase) -------------------------------------------------
 
 ipcMain.handle("todo:list", async () => {
-  const rows = await todoRequest("?select=id,title,completed,created_at&order=completed.asc,created_at.desc");
+  const rows = await requestTodoRows("?select=id,title,completed,created_at&order=completed.asc,created_at.desc");
   if (!Array.isArray(rows)) throw new Error("The To-Do service returned an unexpected response.");
   return rows;
 });
 
 ipcMain.handle("todo:create", async (_event, title) => {
-  if (typeof title !== "string") throw new Error("Please enter a task.");
-  const trimmed = title.trim();
-  if (!trimmed) throw new Error("Please enter a task.");
-  if (trimmed.length > 500) throw new Error("Tasks can be at most 500 characters long.");
+  const trimmed = normalizeTodoTitle(title);
 
-  const rows = await todoRequest("", {
+  const rows = await requestTodoRows("", {
     method: "POST",
     body: JSON.stringify({ title: trimmed, completed: false }),
     headers: { Prefer: "return=representation" }
@@ -575,7 +402,7 @@ ipcMain.handle("todo:set-completed", async (_event, input) => {
   if (!Number.isInteger(id) || id <= 0) throw new Error("Invalid task.");
   if (typeof input?.completed !== "boolean") throw new Error("Invalid task state.");
 
-  const rows = await todoRequest(`?id=eq.${id}`, {
+  const rows = await requestTodoRows(`?id=eq.${id}`, {
     method: "PATCH",
     body: JSON.stringify({ completed: input.completed }),
     headers: { Prefer: "return=representation" }
@@ -588,12 +415,14 @@ ipcMain.handle("todo:delete", async (_event, id) => {
   const taskId = Number(id);
   if (!Number.isInteger(taskId) || taskId <= 0) throw new Error("Invalid task.");
 
-  await todoRequest(`?id=eq.${taskId}`, {
+  await requestTodoRows(`?id=eq.${taskId}`, {
     method: "DELETE",
     headers: { Prefer: "return=minimal" }
   });
   return { ok: true };
 });
+
+// --- IPC: weather and network ----------------------------------------------
 
 ipcMain.handle("weather:current", () =>
   fetchWeather(process.env.ORBIT_WEATHER_BASE_URL ? { baseUrl: process.env.ORBIT_WEATHER_BASE_URL } : {})
@@ -613,6 +442,8 @@ ipcMain.handle("network:overview", async () => {
     ...(publicIpUrl ? { publicIpUrl } : {})
   });
 });
+
+// --- IPC: GitHub inbox -----------------------------------------------------
 
 ipcMain.handle("github:notifications", async () => {
   const token = await readGithubToken();
@@ -636,16 +467,11 @@ ipcMain.handle("github:open", async (_event, target) => {
   await shell.openExternal(url.href);
 });
 
+// --- IPC: Sentry -----------------------------------------------------------
+
 ipcMain.handle("sentry:status", async () => {
   const envConfig = await readSentryEnvConfig();
-  if (envConfig) {
-    return {
-      configured: true,
-      source: "env",
-      organization: envConfig.organization,
-      project: envConfig.project
-    };
-  }
+  if (envConfig) return sentryStatusFromEnv(envConfig);
 
   try {
     const savedConfig = JSON.parse(await fs.readFile(sentryConfigPath(), "utf8"));
@@ -663,14 +489,7 @@ ipcMain.handle("sentry:status", async () => {
 
 ipcMain.handle("sentry:configure", async (_event, input) => {
   const envConfig = await readSentryEnvConfig();
-  if (envConfig) {
-    return {
-      configured: true,
-      source: "env",
-      organization: envConfig.organization,
-      project: envConfig.project
-    };
-  }
+  if (envConfig) return sentryStatusFromEnv(envConfig);
   if (!input || typeof input !== "object") {
     throw new Error("Please enter an organization, project, and API token.");
   }
@@ -747,6 +566,8 @@ ipcMain.handle("sentry:issues", async () => {
 
   return loadSentryIssues({ organization: config.organization, token });
 });
+
+// --- App lifecycle ---------------------------------------------------------
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 

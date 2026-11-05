@@ -1,5 +1,13 @@
 # Changelog - Orbit Desktop App
 
+## [1.11.0] - 2026-11-04
+
+### Added
+- Quick Actions audio console with output switching, output mute, microphone mute, and a volume slider
+
+### Changed
+- Quick Actions is now a single console panel with current device and next switch target
+
 ## [1.10.0] - 2026-11-03
 
 ### Added

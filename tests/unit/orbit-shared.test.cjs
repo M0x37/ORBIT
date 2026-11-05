@@ -61,12 +61,12 @@ test("formatTodoSummary counts open and done items", () => {
   assert.equal(shared.formatTodoSummary(null), "0 OPEN · 0 DONE");
 });
 
-test("todoErrorMessage strips the Electron IPC prefix", () => {
+test("ipcErrorMessage strips the Electron IPC prefix", () => {
   const wrapped = new Error("Error invoking remote method 'todo:create': Error: Please enter a task.");
-  assert.equal(shared.todoErrorMessage(wrapped, "fallback"), "Please enter a task.");
-  assert.equal(shared.todoErrorMessage(new Error("Plain failure"), "fallback"), "Plain failure");
-  assert.equal(shared.todoErrorMessage(null, "fallback"), "fallback");
-  assert.equal(shared.todoErrorMessage(new Error(""), "fallback"), "fallback");
+  assert.equal(shared.ipcErrorMessage(wrapped, "fallback"), "Please enter a task.");
+  assert.equal(shared.ipcErrorMessage(new Error("Plain failure"), "fallback"), "Plain failure");
+  assert.equal(shared.ipcErrorMessage(null, "fallback"), "fallback");
+  assert.equal(shared.ipcErrorMessage(new Error(""), "fallback"), "fallback");
 });
 
 test("formatSentryDetail joins available fields", () => {

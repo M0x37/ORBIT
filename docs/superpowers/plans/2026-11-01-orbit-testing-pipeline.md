@@ -50,7 +50,7 @@
 - `OrbitShared.formatClock(date) -> "HH:MM"`
 - `OrbitShared.formatTemperature(value) -> "3°C" | "—"`
 - `OrbitShared.formatTodoSummary(items) -> "1 OPEN · 2 DONE"`
-- `OrbitShared.todoErrorMessage(error, fallback) -> string`
+- `OrbitShared.ipcErrorMessage(error, fallback) -> string`
 - `OrbitShared.formatSentryDetail(issue) -> string`
 - `OrbitShared.normalizeTodoTitle(title) -> string` (throws)
 - `OrbitShared.parseWeatherPayload(payload) -> { temperature, weatherCode }` (throws)

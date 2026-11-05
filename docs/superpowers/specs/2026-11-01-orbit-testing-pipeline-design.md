@@ -43,7 +43,7 @@ The human partner chose A. Deployment means a GitHub Release with the portable E
 
 ## Structure
 
-- `lib/orbit-shared.js` — UMD module usable by main and renderer: `describeWeather`, `formatClock`, `formatTemperature`, `formatTodoSummary`, `todoErrorMessage`, `formatSentryDetail`, `normalizeTodoTitle`, `parseWeatherPayload`, `parseSentryEnvFile`, `validateSentrySetup`, `getNextSentryPage`, `mapSentryIssue`.
+- `lib/orbit-shared.js` — UMD module usable by main and renderer: `describeWeather`, `formatClock`, `formatTemperature`, `formatTodoSummary`, `ipcErrorMessage`, `formatSentryDetail`, `normalizeTodoTitle`, `parseWeatherPayload`, `parseSentryEnvFile`, `validateSentrySetup`, `getNextSentryPage`, `mapSentryIssue`.
 - `lib/weather-service.cjs` — `fetchWeather({ fetchImpl, baseUrl, location })`: URL building, timeout, error messages, payload validation.
 - `lib/todo-service.cjs` — `todoRequest({ fetchImpl, baseUrl, apiKey, table, search, options })` plus response parsing.
 - `lib/sentry-service.cjs` — `fetchSentryPages(...)` and `loadSentryIssues(...)` with pagination, auth/rate-limit errors, and issue mapping.
