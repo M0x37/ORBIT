@@ -1,5 +1,18 @@
 # Changelog - Orbit Desktop App
 
+## [1.13.0] - 2026-11-11
+
+### Added
+- To-Do now uses a user-configured Supabase project via `SUPABASE_URL` and `SUPABASE_ANON_KEY` in `.env`
+- English README covering setup, features, and security notes
+
+### Changed
+- Personal shortcut URLs moved to a gitignored `lib/shortcuts-local.cjs`; `main.cjs` ships generic defaults only
+- `SUPABASE_TABLE` optionally overrides the To-Do table name (default `todos`)
+
+### Security
+- Removed the hardcoded personal Supabase project and publishable key from the source
+
 ## [1.12.0] - 2026-11-05
 
 ### Added
@@ -280,3 +293,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Weather location remains hardcoded to Dreikirchen
 - No multi-day/daily forecast yet; the detail view covers the next 24 hours
 - Studio/CI still builds only Windows portable binaries
+
+---
+
+## Session Notes 2026-11-11
+
+**Work request**: Keep personal URLs and the personal Supabase project out of the public repo, write an English README, and publish the portable EXE through CI
+
+**Steps taken**:
+1. Moved personal shortcut URLs to a gitignored `lib/shortcuts-local.cjs` and left generic defaults in `main.cjs`
+2. Made the To-Do Supabase project configurable through `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_TABLE` in `.env`
+3. Removed the hardcoded personal Supabase project and publishable key from the source
+4. Added the Supabase variables to `.env.example` and documented the `public.todos` schema in the README
+5. Rewrote the README in English without emojis
+6. Verified `npm run check`, `npm test`, and `npm run test:e2e`
+7. Bumped version 1.12.0 -> 1.13.0 and tagged the release for CI
+
+**Open topics / Known issues**:
+- The CI-built EXE ships generic shortcuts; personal shortcuts require a local build with `lib/shortcuts-local.cjs`
+- To-Do requires a user-provided `.env` next to the EXE
