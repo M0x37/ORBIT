@@ -52,9 +52,7 @@ const artCraftLauncherPath = path.join(
   "ArtCraft Launcher.lnk"
 );
 
-const TODO_SUPABASE_URL = process.env.ORBIT_TODO_BASE_URL || "https://yklavrwnlzizftzytehf.supabase.co";
-const TODO_SUPABASE_KEY = "sb_publishable_8SDYoTbHj-cbCIgkp28KaQ_JVaqb4EN";
-const TODO_TABLE = "todos";
+const DEFAULT_TODO_TABLE = "todos";
 const GLOBAL_HOTKEY = "Alt+A";
 const QUICK_ACTION_HOTKEY = "Alt+Shift+O";
 
@@ -93,11 +91,15 @@ try {
   // Keine lokale Konfigurationsdatei vorhanden -> Standardwerte gelten.
 }
 
-function requestTodoRows(search, options = {}) {
+async function requestTodoRows(search, options = {}) {
+  const config = await readTodoEnvConfig();
+  if (!config) {
+    throw new Error("The To-Do service is not configured. Add SUPABASE_URL and SUPABASE_ANON_KEY to the .env file.");
+  }
   return sendTodoRequest({
-    baseUrl: TODO_SUPABASE_URL,
-    apiKey: TODO_SUPABASE_KEY,
-    table: TODO_TABLE,
+    baseUrl: config.url,
+    apiKey: config.key,
+    table: config.table,
     search,
     options
   });
@@ -205,6 +207,39 @@ async function readGithubToken() {
 
     const values = parseEnvFile(file, ["GITHUB_TOKEN"]);
     if (values.GITHUB_TOKEN) return validateGithubToken(values.GITHUB_TOKEN);
+  }
+  return null;
+}
+
+async function readTodoEnvConfig() {
+  // Test hook: point the To-Do service at a local stub without touching .env.
+  const testBaseUrl = process.env.ORBIT_TODO_BASE_URL;
+  if (testBaseUrl) {
+    return {
+      url: testBaseUrl,
+      key: process.env.ORBIT_TODO_KEY || "test-key",
+      table: process.env.ORBIT_TODO_TABLE || DEFAULT_TODO_TABLE
+    };
+  }
+
+  if (process.env.ORBIT_NO_ENV === "1") return null;
+
+  for (const envPath of envPaths()) {
+    const file = await readEnvTextFile(envPath);
+    if (file === null) continue;
+
+    const values = parseEnvFile(file, ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_TABLE"]);
+    const url = (values.SUPABASE_URL || "").trim();
+    const key = (values.SUPABASE_ANON_KEY || "").trim();
+    if (!url && !key) continue;
+    if (!url || !key) {
+      throw new Error("Please set SUPABASE_URL and SUPABASE_ANON_KEY in the .env file.");
+    }
+    return {
+      url,
+      key,
+      table: (values.SUPABASE_TABLE || DEFAULT_TODO_TABLE).trim()
+    };
   }
   return null;
 }
