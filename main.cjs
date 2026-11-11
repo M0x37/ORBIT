@@ -70,13 +70,28 @@ const shortcuts = {
   github: { kind: "url", target: "https://github.com/" },
   cloudflare: { kind: "url", target: "https://www.cloudflare.com/" },
   vercel: { kind: "url", target: "https://vercel.com/" },
-  chrome: { kind: "url", target: "https://dash.m0x2.dev/" },
-  cloudflareDashboard: { kind: "url", target: "https://dash.cloudflare.com/3482dd2eb85032e7641005c32a67d50e/home" },
-  artcraft: { kind: "url", target: "https://getartcraft.com/" },
-  supabase: { kind: "url", target: "https://supabase.com/dashboard/project/yklavrwnlzizftzytehf" },
-  fritzbox: { kind: "url", target: "http://192.168.178.1/#overview" },
+  chrome: { kind: "url", target: "https://example.com/" },
+  cloudflareDashboard: { kind: "url", target: "https://example.com/" },
+  artcraft: { kind: "url", target: "https://example.com/" },
+  supabase: { kind: "url", target: "https://example.com/" },
+  fritzbox: { kind: "url", target: "http://192.168.1.1/#overview" },
   artcraftLauncher: { kind: "app", target: artCraftLauncherPath }
 };
+
+// Lokale, nicht getrackte Überschreibungen für persönliche Kurzbefehle laden.
+// Die Datei lib/shortcuts-local.cjs steht in .gitignore und wird nie gepusht.
+try {
+  const localShortcuts = require("./lib/shortcuts-local.cjs");
+  if (localShortcuts && typeof localShortcuts === "object") {
+    for (const [key, value] of Object.entries(localShortcuts)) {
+      if (value && typeof value === "object") {
+        shortcuts[key] = value;
+      }
+    }
+  }
+} catch {
+  // Keine lokale Konfigurationsdatei vorhanden -> Standardwerte gelten.
+}
 
 function requestTodoRows(search, options = {}) {
   return sendTodoRequest({

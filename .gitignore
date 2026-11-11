@@ -5,3 +5,4 @@ test-results/
 playwright-report/
 coverage/
 .superpowers/
+lib/shortcuts-local.cjs
